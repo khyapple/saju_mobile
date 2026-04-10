@@ -73,23 +73,44 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                 slivers: [
                   const SliverToBoxAdapter(child: DancheongBar()),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     sliver: SliverToBoxAdapter(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              Text(
-                                '안녕하세요, ${auth.displayName}님',
-                                style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
+                              SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    const Icon(Icons.person, color: kGold, size: 30),
+                                    Image.asset(
+                                      'assets/images/profile_frame.png',
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                '나의 사주 프로필',
-                                style: TextStyle(fontSize: 13, color: kDark.withOpacity(0.4)),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '안녕하세요, ${auth.displayName}님',
+                                    style: const TextStyle(
+                                      fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
+                                    ),
+                                  ),
+                                  Text(
+                                    '나의 사주 프로필',
+                                    style: TextStyle(fontSize: 13, color: kDark.withOpacity(0.4)),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -97,7 +118,6 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                       ),
                     ),
                   ),
-                  const SliverPadding(padding: EdgeInsets.only(top: 20)),
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.only(bottom: 16),
@@ -112,7 +132,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.80,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (_, __) => const ProfileCardSkeleton(),
@@ -155,7 +175,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 0.80,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -270,27 +290,11 @@ class _ProfileCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
+          color: const Color(0x10FFFFFF),
           border: Border.all(
-            color: accentColor.withOpacity(isOwner ? 0.5 : 0.3),
-            width: isOwner ? 1.0 : 0.5,
+            color: kGold.withOpacity(0.25),
+            style: BorderStyle.solid,
           ),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accentColor.withOpacity(0.18),
-              const Color(0x14FFFFFF),
-              const Color(0x0AFFFFFF),
-            ],
-            stops: const [0.0, 0.4, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -309,6 +309,7 @@ class ApiService {
     required String impact,
     int? eventMonth,
     String? category,
+    String? title,
   }) async {
     final headers = await _authHeaders();
     final res = await http.post(
@@ -320,6 +321,7 @@ class ApiService {
         'impact': impact,
         if (eventMonth != null) 'eventMonth': eventMonth,
         if (category != null) 'category': category,
+        if (title != null && title.isNotEmpty) 'title': title,
       }),
     ).timeout(_timeout, onTimeout: () => throw Exception('서버 연결 시간이 초과됐습니다.'));
     if (res.statusCode != 200 && res.statusCode != 201) {
@@ -336,6 +338,7 @@ class ApiService {
     String? description,
     String? impact,
     String? category,
+    String? title,
   }) async {
     final headers = await _authHeaders();
     final res = await http.patch(
@@ -348,6 +351,7 @@ class ApiService {
         if (description != null) 'description': description,
         if (impact != null) 'impact': impact,
         if (category != null) 'category': category,
+        if (title != null) 'title': title,
       }),
     ).timeout(_timeout, onTimeout: () => throw Exception('서버 연결 시간이 초과됐습니다.'));
     if (res.statusCode != 200) {

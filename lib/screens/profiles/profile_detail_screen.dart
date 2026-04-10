@@ -164,7 +164,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   Tab(text: '이벤트'),
                 ],
               ),
-              const DancheongBar(height: 3),
             ],
           ),
         ),
@@ -238,8 +237,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           _infoCard(),
           const SizedBox(height: 16),
           SajuChartWidget(chartData: chart),
-          const SizedBox(height: 16),
-          FiveElementsWidget(chartData: chart),
           const SizedBox(height: 16),
           _elementsDescription(chart),
           const SizedBox(height: 16),
@@ -766,7 +763,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     return Stack(
       children: [
         ListView.separated(
-          padding: EdgeInsets.fromLTRB(20, topPadding + addBarHeight + 20, 20, 100),
+          padding: EdgeInsets.fromLTRB(20, topPadding + addBarHeight + 56, 20, 100),
           itemCount: events.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, i) {
@@ -778,6 +775,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             final category = event['category'] as String?;
             final impactColor = _impactColor(impact);
 
+            final title = event['title'] as String? ?? '';
             return GestureDetector(
               onTap: () => _showEventDetailSheet(event),
               child: ClipRRect(
@@ -792,36 +790,42 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                       border: Border.all(color: kGlassBorder),
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // 날짜 뱃지 (흰색 반투명)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: impactColor.withOpacity(0.15),
+                            color: const Color(0x1AFFFFFF),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0x30FFFFFF)),
                           ),
                           child: Text(
                             month != null ? '$year.$month' : '$year',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: impactColor),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: kDark),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
+                        // 영향도 뱃지 (색 구분)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: impactColor.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _impactLabel(impact),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: impactColor),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // 제목
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                desc,
-                                style: const TextStyle(fontSize: 14, color: kDark, height: 1.4),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (category != null) ...[
-                                const SizedBox(height: 4),
-                                Text(category,
-                                  style: const TextStyle(fontSize: 11, color: kTextMuted)),
-                              ],
-                            ],
+                          child: Text(
+                            title.isNotEmpty ? title : desc,
+                            style: const TextStyle(fontSize: 14, color: kDark, fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Icon(Icons.chevron_right, color: kDark.withOpacity(0.3), size: 20),
@@ -835,48 +839,75 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
         ),
         // 상단 고정 "이벤트 추가" 버튼
         Positioned(
-          top: topPadding + 12,
+          top: topPadding + 20,
           left: 20,
           right: 20,
           child: GestureDetector(
             onTap: _showAddEventSheet,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
-                  height: addBarHeight - 12,
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        kGold.withOpacity(0.18),
-                        kGold.withOpacity(0.08),
+                        kGold.withOpacity(0.25),
+                        kGold.withOpacity(0.10),
+                        kDancheongRed.withOpacity(0.08),
                       ],
                     ),
-                    border: Border.all(color: kGold.withOpacity(0.4)),
+                    border: Border.all(color: kGold.withOpacity(0.5), width: 1.0),
                     boxShadow: [
                       BoxShadow(
-                        color: kGold.withOpacity(0.15),
-                        blurRadius: 12,
+                        color: kGold.withOpacity(0.2),
+                        blurRadius: 20,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_circle_outline, color: kGold, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        '이벤트 추가',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: kGold,
-                          letterSpacing: 0.5,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: kGold.withOpacity(0.15),
+                          border: Border.all(color: kGold.withOpacity(0.4)),
                         ),
+                        child: const Icon(Icons.add, color: kGold, size: 16),
                       ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '중요한 사건을 기록해보세요',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: kGold,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          Text(
+                            '사주 풀이가 더 정확해 집니다',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: kTextMuted,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Icon(Icons.chevron_right, color: kGold.withOpacity(0.5), size: 20),
                     ],
                   ),
                 ),
@@ -893,11 +924,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     if (distribution == null) return const SizedBox.shrink();
 
     final elements = [
-      ('목(木)', '목', kWoodColor, '성장, 창의, 인자'),
-      ('화(火)', '화', kFireColor, '열정, 예의, 지혜'),
-      ('토(土)', '토', kEarthColor, '신용, 안정, 포용'),
-      ('금(金)', '금', kMetalColor, '의리, 결단, 정의'),
-      ('수(水)', '수', kWaterColor, '지혜, 유연, 지모'),
+      ('목(木)', 'wood', kWoodColor, '성장, 창의, 인자'),
+      ('화(火)', 'fire', kFireColor, '열정, 예의, 지혜'),
+      ('토(土)', 'earth', kEarthColor, '신용, 안정, 포용'),
+      ('금(金)', 'metal', kMetalColor, '의리, 결단, 정의'),
+      ('수(水)', 'water', kWaterColor, '지혜, 유연, 지모'),
     ];
 
     return ClipRRect(
@@ -914,11 +945,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('오행 의미',
+              const Text('오행 분포',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
               const SizedBox(height: 12),
               ...elements.map((e) {
-                final count = ((distribution[e.$2] as num?)?.toInt()) ?? 0;
+                final count = (distribution.containsKey(e.$2)
+                    ? (distribution[e.$2] as num?)?.toInt()
+                    : null) ?? 0;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
@@ -947,7 +980,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                         ),
                       ),
                       Text('$count개',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: e.$3)),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: count == 0 ? kTextMuted : e.$3,
+                        )),
                     ],
                   ),
                 );
@@ -1144,16 +1181,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: borderColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                      ),
-                    ),
-                  ),
                   Expanded(
                     child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1164,9 +1191,18 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                    style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700, color: kGold)),
+                  Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Image.asset('assets/images/tab_selected.png', width: 14, height: 14, fit: BoxFit.contain),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(title,
+                        style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700, color: kGold)),
+                    ],
+                  ),
                   if (summary.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(summary,
@@ -1189,20 +1225,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    children: [
-                      Text(
-                        isExpanded ? '간략히 보기' : '자세히 보기',
-                        style: const TextStyle(fontSize: 12, color: kGold, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        size: 16, color: kGold,
-                      ),
-                    ],
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Icon(
+                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      size: 18, color: kGold,
+                    ),
                   ),
                 ),
               ),
@@ -1211,13 +1240,20 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Container(
+                  constraints: const BoxConstraints(maxHeight: 240),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0x0AFFFFFF),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(content,
-                    style: const TextStyle(fontSize: 13, color: kDark, height: 1.7)),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(content,
+                        style: const TextStyle(fontSize: 13, color: kDark, height: 1.7)),
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -1633,6 +1669,7 @@ class _AddEventSheet extends StatefulWidget {
 }
 
 class _AddEventSheetState extends State<_AddEventSheet> {
+  final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   int _year = DateTime.now().year;
   int? _month;
@@ -1657,6 +1694,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
     super.initState();
     final e = widget.existingEvent;
     if (e != null) {
+      _titleCtrl.text = (e['title'] as String?) ?? '';
       _descCtrl.text = (e['description'] as String?) ?? '';
       _year = (e['eventYear'] as num?)?.toInt() ?? DateTime.now().year;
       _month = (e['eventMonth'] as num?)?.toInt();
@@ -1666,6 +1704,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
 
   @override
   void dispose() {
+    _titleCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -1686,6 +1725,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
           eventMonth: _month,
           description: _descCtrl.text.trim(),
           impact: _impact,
+          title: _titleCtrl.text.trim(),
         );
         widget.onAdded();
         if (mounted) Navigator.pop(context);
@@ -1697,6 +1737,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
         description: _descCtrl.text.trim(),
         impact: _impact,
         eventMonth: _month,
+        title: _titleCtrl.text.trim(),
       );
       widget.onAdded();
       if (mounted) Navigator.pop(context);
@@ -1729,6 +1770,27 @@ class _AddEventSheetState extends State<_AddEventSheet> {
               ],
             ),
             const SizedBox(height: 20),
+            const Text('제목',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _titleCtrl,
+              maxLines: 1,
+              style: const TextStyle(fontSize: 14, color: kDark),
+              decoration: InputDecoration(
+                hintText: '이벤트 제목을 입력해주세요',
+                hintStyle: const TextStyle(color: kTextMuted, fontSize: 13),
+                filled: true, fillColor: const Color(0x0AFFFFFF),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kGlassBorder)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: kGlassBorder)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: kGold, width: 1.5)),
+                contentPadding: const EdgeInsets.all(14),
+              ),
+            ),
+            const SizedBox(height: 16),
             const Text('연도',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
