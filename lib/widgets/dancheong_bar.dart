@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 골드 구분선 위젯
-/// 중앙 장식 문양(divider_center) 양쪽에 직선(divider_line) 1개씩 연장
+/// 중앙 장식 문양(divider_center) 양쪽에 직선(divider_line) 4개씩 연장
 /// — 이미지 비율 유지, 높이에 맞춰 크기 결정
 class DancheongBar extends StatelessWidget {
   final double height;
@@ -16,11 +16,16 @@ class DancheongBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 좌측 연장 ×1 — 가로로 늘리는 건 선이라 자연스러움
+          // 좌측 연장 ×4
           Expanded(
-            child: Image.asset(
-              'assets/images/divider_line.png',
-              fit: BoxFit.fill,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+              ],
             ),
           ),
           // 중앙 장식 문양 — 비율 유지 (fitHeight)
@@ -29,11 +34,16 @@ class DancheongBar extends StatelessWidget {
             fit: BoxFit.fitHeight,
             height: height,
           ),
-          // 우측 연장 ×1
+          // 우측 연장 ×4
           Expanded(
-            child: Image.asset(
-              'assets/images/divider_line.png',
-              fit: BoxFit.fill,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+                Expanded(child: Image.asset('assets/images/divider_line.png', fit: BoxFit.fill)),
+              ],
             ),
           ),
         ],

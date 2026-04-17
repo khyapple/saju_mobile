@@ -58,6 +58,22 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     }
   }
 
+  static const _branchEmojiMap = {
+    '자': '🐭', '축': '🐮', '인': '🐯', '묘': '🐰',
+    '진': '🐲', '사': '🐍', '오': '🐴', '미': '🐑',
+    '신': '🐵', '유': '🐔', '술': '🐶', '해': '🐷',
+  };
+
+  static String _zodiacEmoji(Map<String, dynamic>? chartData) {
+    // 일주(日柱)의 지지(地支) 글자로 동물 결정
+    if (chartData != null) {
+      final dayPillar = chartData['dayPillar'] as Map<String, dynamic>?;
+      final branch = (dayPillar?['branch'] as Map<String, dynamic>?)?['char'] as String?;
+      if (branch != null) return _branchEmojiMap[branch] ?? '🐾';
+    }
+    return '🐾';
+  }
+
   bool _hasAnyInterpretation(Map<String, dynamic> data) {
     final sections = data['interpretationSections'];
     if (sections is List && sections.isNotEmpty) return true;
@@ -182,23 +198,16 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   ],
                 ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'chat',
-        backgroundColor: kGold,
-        onPressed: () => context.push('/profiles/${widget.profileId}/consultation'),
-        elevation: 4,
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: kGoldGlow,
-                blurRadius: 16,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.chat_bubble_outline, color: kInk),
+      floatingActionButton: SizedBox(
+        width: 44,
+        height: 44,
+        child: FloatingActionButton(
+          heroTag: 'chat',
+          backgroundColor: kGold,
+          onPressed: () => context.push('/profiles/${widget.profileId}/consultation'),
+          elevation: 4,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.chat_bubble_outline, color: kInk, size: 20),
         ),
       ),
     );
@@ -227,9 +236,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
         child: Text('차트 데이터가 없습니다.', style: TextStyle(color: kTextMuted)),
       );
     }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: Column(
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Extra top padding for app bar
@@ -244,7 +255,73 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           const SizedBox(height: 80),
         ],
       ),
-    );
+    ), // SingleChildScrollView
+  ); // ScrollConfiguration
+  }
+
+  // 태어난 해의 한국식 이름 계산 (e.g. "갑술년 · 흰개띠")
+  // 일주 천간 → 오행 색
+  static Color _dayPillarColor(Map<String, dynamic>? chartData) {
+    final day = chartData?['dayPillar'] as Map<String, dynamic>?;
+    final stem = (day?['stem'] as Map<String, dynamic>?)?['char'] as String?;
+    switch (stem) {
+      case '갑': case '을': return kWoodColor;
+      case '병': case '정': return kFireColor;
+      case '무': case '기': return kEarthColor;
+      case '경': case '신': return kMetalColor;
+      case '임': case '계': return kWaterColor;
+      default: return kDancheongRed;
+    }
+  }
+
+  // 일주(日柱) 천간+지지 → "갑술일주 · 푸른 개" 형식
+  static String? _dayPillarLabel(Map<String, dynamic>? chartData) {
+    if (chartData == null) return null;
+    final day = chartData['dayPillar'] as Map<String, dynamic>?;
+    if (day == null) return null;
+    final stemChar   = (day['stem']   as Map<String, dynamic>?)?['char'] as String?;
+    final branchChar = (day['branch'] as Map<String, dynamic>?)?['char'] as String?;
+    if (stemChar == null || branchChar == null) return null;
+    const colorMap = {
+      '갑': '푸른', '을': '푸른',
+      '병': '붉은', '정': '붉은',
+      '무': '노란', '기': '노란',
+      '경': '흰',   '신': '흰',
+      '임': '검은', '계': '검은',
+    };
+    const animalMap = {
+      '자': '쥐', '축': '소', '인': '호랑이', '묘': '토끼',
+      '진': '용', '사': '뱀', '오': '말',     '미': '양',
+      '신': '원숭이', '유': '닭', '술': '개', '해': '돼지',
+    };
+    final color  = colorMap[stemChar] ?? '';
+    final animal = animalMap[branchChar];
+    if (animal == null) return null;
+    return '$stemChar${branchChar}일주 · $color $animal';
+  }
+
+  // birthHour 문자열 → 시진 표시 (e.g. "자시 (23:00~01:00)")
+  static String? _hourDisplay(String? birthHour, String? precision) {
+    if (precision == 'unknown' || birthHour == null) return null;
+    const hours = [
+      ('자시', '23:00~01:00', '23'),
+      ('축시', '01:00~03:00', '01'),
+      ('인시', '03:00~05:00', '03'),
+      ('묘시', '05:00~07:00', '05'),
+      ('진시', '07:00~09:00', '07'),
+      ('사시', '09:00~11:00', '09'),
+      ('오시', '11:00~13:00', '11'),
+      ('미시', '13:00~15:00', '13'),
+      ('신시', '15:00~17:00', '15'),
+      ('유시', '17:00~19:00', '17'),
+      ('술시', '19:00~21:00', '19'),
+      ('해시', '21:00~23:00', '21'),
+    ];
+    final padded = birthHour.padLeft(2, '0');
+    for (final h in hours) {
+      if (h.$3 == padded) return '${h.$2} (${h.$1})';
+    }
+    return null;
   }
 
   Widget _infoCard() {
@@ -264,6 +341,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final calendarType =
         (p['calendar_type'] as String?) ?? (p['calendarType'] as String?);
     final relationship = p['relationship'] as String?;
+    final birthHour = (p['birthHour'] ?? p['birth_hour'])?.toString();
+    final birthHourPrecision = (p['birthTimeType'] ?? p['birth_time_type'] ?? p['birth_hour_precision']) as String?;
+    final chartData = (p['chartData'] ?? p['chart_data']) as Map<String, dynamic>?;
+    final pillarColor = _dayPillarColor(chartData);
+    final dayPillarLabel = _dayPillarLabel(chartData);
+    final hourDisplay = _hourDisplay(birthHour, birthHourPrecision);
     debugPrint('=== _infoCard: name=$name, birthDate=$birthDate, gender=$gender, calendarType=$calendarType');
 
     return ClipRRect(
@@ -280,12 +363,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 좌측 단청 빨강 액센트 strip
+                // 좌측 액센트 strip (일주 오행 색)
                 Container(
                   width: 3,
-                  decoration: const BoxDecoration(
-                    color: kDancheongRed,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: pillarColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       bottomLeft: Radius.circular(16),
                     ),
@@ -297,18 +380,18 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: kGold.withOpacity(0.15),
                             shape: BoxShape.circle,
+                            gradient: RadialGradient(colors: [
+                              pillarColor.withOpacity(0.20),
+                              pillarColor.withOpacity(0.06),
+                            ]),
+                            border: Border.all(color: pillarColor.withOpacity(0.35)),
                           ),
                           child: Text(
-                            name.isNotEmpty ? name[0] : '?',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: kGold,
-                            ),
+                            _zodiacEmoji(chartData),
+                            style: const TextStyle(fontSize: 22),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -317,21 +400,58 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(name,
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
+                              // 이름 + 관계 뱃지
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(name,
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
+                                  if (relationship != null && relationship.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: kSecondaryGold.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: kSecondaryGold.withOpacity(0.4), width: 0.5),
+                                      ),
+                                      child: Text(
+                                        relationship,
+                                        style: const TextStyle(fontSize: 11, color: kSecondaryGold, fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                               const SizedBox(height: 4),
+                              // 양력/음력 · 생년월일 · 성별
                               Text(
                                 [
+                                  if (calendarType != null) calendarType == 'solar' ? '양력' : '음력',
                                   if (birthDate.isNotEmpty) _formatDate(birthDate),
                                   if (gender != null) gender == 'male' ? '남성' : '여성',
-                                  if (calendarType != null) calendarType == 'solar' ? '양력' : '음력',
                                 ].join(' · '),
                                 style: const TextStyle(fontSize: 12, color: kTextMuted),
                               ),
-                              if (relationship != null && relationship.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(relationship,
-                                  style: const TextStyle(fontSize: 12, color: kSecondaryGold)),
+                              if (hourDisplay != null) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.schedule, size: 12, color: kTextMuted),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      hourDisplay,
+                                      style: const TextStyle(fontSize: 12, color: kTextMuted),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (dayPillarLabel != null) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  dayPillarLabel,
+                                  style: const TextStyle(fontSize: 12, color: kTextMuted),
+                                ),
                               ],
                             ],
                           ),
@@ -344,8 +464,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             ),
           ),
         ),
-      ),
-    );
+      ), // ClipRRect
+    ); // _infoCard return
   }
 
   String _formatDate(String date) {
@@ -354,9 +474,62 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     return '${parts[0]}년 ${parts[1]}월 ${parts[2]}일';
   }
 
+  // 십성(十星) 계산
+  static String _tenGod(String dayMaster, String target) {
+    const el = {
+      '갑': 'wood', '을': 'wood', '병': 'fire', '정': 'fire',
+      '무': 'earth', '기': 'earth', '경': 'metal', '신': 'metal',
+      '임': 'water', '계': 'water',
+    };
+    const yang = {'갑', '병', '무', '경', '임'};
+    const gen = {'wood':'fire','fire':'earth','earth':'metal','metal':'water','water':'wood'};
+    const ctrl = {'wood':'earth','earth':'water','water':'fire','fire':'metal','metal':'wood'};
+
+    final dmEl = el[dayMaster]; final tEl = el[target];
+    if (dmEl == null || tEl == null) return '';
+    final same = yang.contains(dayMaster) == yang.contains(target);
+
+    if (dmEl == tEl)         return same ? '비견' : '겁재';
+    if (gen[dmEl] == tEl)    return same ? '식신' : '상관';
+    if (ctrl[dmEl] == tEl)   return same ? '편재' : '정재';
+    if (ctrl[tEl] == dmEl)   return same ? '편관' : '정관';
+    if (gen[tEl] == dmEl)    return same ? '편인' : '정인';
+    return '';
+  }
+
+  // 천간/지지 → 오행 색
+  static Color _elementColorOf(String char) {
+    const stemEl = {
+      '갑':'wood','을':'wood','병':'fire','정':'fire',
+      '무':'earth','기':'earth','경':'metal','신':'metal','임':'water','계':'water',
+    };
+    const branchEl = {
+      '자':'water','축':'earth','인':'wood','묘':'wood','진':'earth','사':'fire',
+      '오':'fire','미':'earth','신':'metal','유':'metal','술':'earth','해':'water',
+    };
+    switch (stemEl[char] ?? branchEl[char]) {
+      case 'wood':  return kWoodColor;
+      case 'fire':  return kFireColor;
+      case 'earth': return kEarthColor;
+      case 'metal': return kMetalColor;
+      case 'water': return kWaterColor;
+      default:      return kGlassBorder;
+    }
+  }
+
+  // 지지 → 본기(本氣) 천간 (십성 계산용)
+  static const _branchMainStem = {
+    '자':'계', '축':'기', '인':'갑', '묘':'을',
+    '진':'무', '사':'병', '오':'정', '미':'기',
+    '신':'경', '유':'신', '술':'무', '해':'임',
+  };
+
   Widget _luckTimeline(Map<String, dynamic> chart) {
     final luck = chart['majorLuck'] as List<dynamic>?;
     if (luck == null || luck.isEmpty) return const SizedBox.shrink();
+
+    // 일간(日干) 추출
+    final dayMaster = (chart['dayPillar']?['stem'] as Map<String, dynamic>?)?['char'] as String? ?? '';
 
     final birthYear = _profile?['birthYear'] as int?;
     final currentAge = birthYear != null ? DateTime.now().year - birthYear : null;
@@ -392,11 +565,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
               const SizedBox(height: 12),
               SizedBox(
-                height: 100,
+                height: 180,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
                   itemCount: luck.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
                   itemBuilder: (context, i) {
                     final period = luck[i] as Map<String, dynamic>;
                     final age = period['startAge'] as int? ?? 0;
@@ -405,52 +579,87 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                     final stem = stemInfo?['char'] as String? ?? '';
                     final branch = branchInfo?['char'] as String? ?? '';
                     final isCurrent = i == currentIndex;
-                    return Container(
-                      width: 64,
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+
+                    final stemGod    = dayMaster.isNotEmpty && stem.isNotEmpty ? _tenGod(dayMaster, stem) : '';
+                    final branchMain = _branchMainStem[branch] ?? '';
+                    final branchGod  = dayMaster.isNotEmpty && branchMain.isNotEmpty ? _tenGod(dayMaster, branchMain) : '';
+                    final stemColor   = _elementColorOf(stem);
+                    final branchColor = _elementColorOf(branch);
+                    final isWaterStem   = stemColor == kWaterColor;
+                    final isWaterBranch = branchColor == kWaterColor;
+
+                    Widget charCard(String char, Color color, bool isWater) => Container(
+                      width: 40,
+                      height: 54,
                       decoration: BoxDecoration(
-                        color: isCurrent
-                            ? kDancheongRed.withOpacity(0.18)
-                            : const Color(0x0AFFFFFF),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isCurrent ? kDancheongRed.withOpacity(0.7) : kGlassBorder,
-                          width: isCurrent ? 1.5 : 1.0,
+                          color: isCurrent ? kGold.withOpacity(0.45) : Colors.white.withOpacity(0.12),
+                        ),
+                        boxShadow: [BoxShadow(color: color.withOpacity(0.30), blurRadius: 8, offset: const Offset(0, 3))],
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                          colors: [
+                            color.withOpacity(isWater ? 0.55 : 0.40),
+                            color.withOpacity(isWater ? 0.40 : 0.22),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (isCurrent) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      child: Center(
+                        child: Text(char, style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2))],
+                        )),
+                      ),
+                    );
+
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.topCenter,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 12),
+                            // 나이
+                            Text('$age세', style: TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600,
+                              color: isCurrent ? kGold : Colors.white54,
+                            )),
+                            const SizedBox(height: 5),
+                            // 천간 십성
+                            if (stemGod.isNotEmpty)
+                              Text(stemGod, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                            const SizedBox(height: 2),
+                            // 천간 카드
+                            charCard(stem, stemColor, isWaterStem),
+                            const SizedBox(height: 4),
+                            // 지지 카드
+                            charCard(branch, branchColor, isWaterBranch),
+                            const SizedBox(height: 2),
+                            // 지지 십성
+                            if (branchGod.isNotEmpty)
+                              Text(branchGod, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                          ],
+                        ),
+                        if (isCurrent)
+                          Positioned(
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: kDancheongRed,
                                 borderRadius: BorderRadius.circular(4),
+                                boxShadow: [BoxShadow(color: kDancheongRed.withOpacity(0.4), blurRadius: 6)],
                               ),
                               child: const Text('현재',
-                                style: TextStyle(fontSize: 8, color: kDark, fontWeight: FontWeight.w700)),
+                                style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700)),
                             ),
-                            const SizedBox(height: 2),
-                          ],
-                          Text('$age세',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isCurrent ? kGold : kTextMuted,
-                              fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
-                            )),
-                          const SizedBox(height: 4),
-                          Text(stem,
-                            style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600,
-                              color: isCurrent ? kGold : kSecondaryGold)),
-                          Text(branch,
-                            style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600,
-                              color: isCurrent ? kDark : kDark)),
-                        ],
-                      ),
+                          ),
+                      ],
                     );
+
                   },
                 ),
               ),
@@ -920,15 +1129,45 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _elementsDescription(Map<String, dynamic> chart) {
-    final distribution = chart['fiveElements'] as Map<String, dynamic>?;
-    if (distribution == null) return const SizedBox.shrink();
+    // 기둥 데이터에서 직접 오행 수량 계산
+    const stemElementMap = {
+      '갑': 'wood', '을': 'wood',
+      '병': 'fire', '정': 'fire',
+      '무': 'earth', '기': 'earth',
+      '경': 'metal', '신': 'metal',
+      '임': 'water', '계': 'water',
+    };
+    const branchElementMap = {
+      '자': 'water', '축': 'earth',
+      '인': 'wood', '묘': 'wood',
+      '진': 'earth', '사': 'fire',
+      '오': 'fire', '미': 'earth',
+      '신': 'metal', '유': 'metal',
+      '술': 'earth', '해': 'water',
+    };
+
+    final counts = <String, int>{'wood': 0, 'fire': 0, 'earth': 0, 'metal': 0, 'water': 0};
+    for (final key in ['yearPillar', 'monthPillar', 'dayPillar', 'hourPillar']) {
+      final pillar = chart[key] as Map<String, dynamic>?;
+      if (pillar == null) continue;
+      final stemChar = (pillar['stem'] as Map?)?['char'] as String?;
+      final branchChar = (pillar['branch'] as Map?)?['char'] as String?;
+      if (stemChar != null && stemElementMap.containsKey(stemChar)) {
+        final el = stemElementMap[stemChar]!;
+        counts[el] = (counts[el] ?? 0) + 1;
+      }
+      if (branchChar != null && branchElementMap.containsKey(branchChar)) {
+        final el = branchElementMap[branchChar]!;
+        counts[el] = (counts[el] ?? 0) + 1;
+      }
+    }
 
     final elements = [
-      ('목(木)', 'wood', kWoodColor, '성장, 창의, 인자'),
-      ('화(火)', 'fire', kFireColor, '열정, 예의, 지혜'),
-      ('토(土)', 'earth', kEarthColor, '신용, 안정, 포용'),
-      ('금(金)', 'metal', kMetalColor, '의리, 결단, 정의'),
-      ('수(水)', 'water', kWaterColor, '지혜, 유연, 지모'),
+      ('木', 'wood', kWoodColor,  ['성장', '창의', '인자']),
+      ('火', 'fire', kFireColor,  ['열정', '예의', '지혜']),
+      ('土', 'earth', kEarthColor, ['신용', '안정', '포용']),
+      ('金', 'metal', kMetalColor, ['의리', '결단', '정의']),
+      ('水', 'water', kWaterColor, ['지혜', '유연', '지모']),
     ];
 
     return ClipRRect(
@@ -943,53 +1182,147 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             border: Border.all(color: kGlassBorder),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('오행 분포',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
-              const SizedBox(height: 12),
-              ...elements.map((e) {
-                final count = (distribution.containsKey(e.$2)
-                    ? (distribution[e.$2] as num?)?.toInt()
-                    : null) ?? 0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: e.$3.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(e.$1.split('(').first,
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: e.$3)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(e.$1,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kDark)),
-                            Text(e.$4,
-                              style: const TextStyle(fontSize: 11, color: kTextMuted)),
-                          ],
-                        ),
-                      ),
-                      Text('$count개',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: count == 0 ? kTextMuted : e.$3,
-                        )),
-                    ],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('오행 분포',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+        const SizedBox(height: 12),
+        ...elements.map((e) {
+          final count = counts[e.$2] ?? 0;
+          final isWater = e.$2 == 'water';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                );
-              }),
-            ],
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: ColoredBox(
+                  color: kWaterColor.withOpacity(0.45),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withOpacity(0.07),
+                                  Colors.white.withOpacity(0.02),
+                                  kWaterColor.withOpacity(0.15),
+                                ],
+                                stops: const [0.0, 0.5, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                stops: const [0.0, 0.38, 0.42, 1.0],
+                                colors: [
+                                  Colors.white.withOpacity(0.06),
+                                  Colors.white.withOpacity(0.02),
+                                  Colors.transparent,
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // 한자 색 박스
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: e.$3.withOpacity(isWater ? 0.55 : 0.25),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: isWater ? Colors.grey.withOpacity(0.5) : e.$3.withOpacity(0.3), width: 0.5),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    e.$1,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // 뱃지
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  alignment: WrapAlignment.start,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: e.$4.map((kw) => Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      color: Colors.white.withOpacity(0.15),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.4),
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      kw,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  )).toList(),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // 수량 맨 오른쪽
+                              Text(
+                                '$count개',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
           ),
         ),
       ),
