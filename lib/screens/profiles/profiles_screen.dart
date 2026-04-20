@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profiles_provider.dart';
+import '../../services/api_service.dart';
 import '../../models/profile.dart';
 import '../../widgets/dancheong_bar.dart';
 import '../../widgets/cosmic_background.dart';
@@ -37,6 +38,11 @@ class _ProfilesScreenState extends State<ProfilesScreen>
 
   bool get _isDragging => _draggingProfile != null;
 
+  final ApiService _api = ApiService();
+  int? _tokensRemaining;
+  int? _tokensLimit;
+  String _plan = 'free';
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +52,21 @@ class _ProfilesScreenState extends State<ProfilesScreen>
     )..forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfilesProvider>().loadProfiles();
+      _loadSubscription();
     });
+  }
+
+  Future<void> _loadSubscription() async {
+    try {
+      final sub = await _api.getSubscription();
+      if (mounted) {
+        setState(() {
+          _tokensRemaining = (sub['tokensRemaining'] as num?)?.toInt();
+          _tokensLimit = (sub['tokensLimit'] as num?)?.toInt();
+          _plan = (sub['plan'] as String?) ?? 'free';
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -182,9 +202,14 @@ class _ProfilesScreenState extends State<ProfilesScreen>
     final profiles = profilesProvider.profiles;
     final display = _displayList(profiles);
 
+    final ownerProfile = profiles.where((p) => p.isOwner).firstOrNull
+        ?? (profiles.isNotEmpty ? profiles.first : null);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       endDrawer: _isDragging ? null : _buildDrawer(auth),
+      floatingActionButton: _isDragging ? null : _buildFab(ownerProfile, profiles),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -370,10 +395,155 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                       ),
                     ),
 
-                  const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
                 ],
               ), // CustomScrollView
               ), // ScrollConfiguration
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _planLabel(String plan) {
+    switch (plan.toLowerCase()) {
+      case 'basic': return 'Basic 플랜';
+      case 'pro': return 'Pro 플랜';
+      case 'ultimate': return 'Ultimate 플랜';
+      default: return '무료 플랜';
+    }
+  }
+
+  Widget? _buildFab(Profile? ownerProfile, List<Profile> profiles) {
+    if (profiles.isEmpty) return null;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFDD835), kGold],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: kGold.withOpacity(0.22),
+            blurRadius: 12,
+            spreadRadius: 0,
+            offset: Offset.zero,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(28),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: () {
+            if (profiles.length == 1) {
+              context.push('/profiles/${profiles.first.id}/consultation');
+            } else if (ownerProfile != null) {
+              _showProfilePicker(profiles);
+            } else {
+              _showProfilePicker(profiles);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, color: kInk, size: 18),
+                const SizedBox(width: 8),
+                const Text(
+                  'AI 사주상담',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: kInk,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showProfilePicker(List<Profile> profiles) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: kCosmicNavy.withOpacity(0.9),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(top: BorderSide(color: kGlassBorder)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(
+                      color: kGlassBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '누구의 사주를 상담할까요?',
+                    style: TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700, color: kDark),
+                  ),
+                  const SizedBox(height: 12),
+                  ...profiles.map((p) => ListTile(
+                    leading: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: kGold.withOpacity(p.isOwner ? 0.2 : 0.08),
+                        border: Border.all(
+                          color: kGold.withOpacity(p.isOwner ? 0.6 : 0.2)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          p.name.isNotEmpty ? p.name[0] : '?',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: p.isOwner ? kGold : kDark.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ),
+                    title: Text(p.name,
+                      style: const TextStyle(fontSize: 14, color: kDark, fontWeight: FontWeight.w600)),
+                    subtitle: p.isOwner
+                        ? const Text('나의 사주',
+                            style: TextStyle(fontSize: 11, color: kGold))
+                        : (p.relationship != null
+                            ? Text(p.relationship!,
+                                style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.4)))
+                            : null),
+                    trailing: const Icon(Icons.chevron_right, color: kTextMuted, size: 18),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/profiles/${p.id}/consultation');
+                    },
+                  )),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),
@@ -448,69 +618,205 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 48),
-                      Divider(color: kGlassBorder, height: 1),
-                      const SizedBox(height: 48),
-                      ListTile(
-                        leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                        title: const Text('궁합 분석', style: TextStyle(color: kDark)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/compatibility');
-                        },
-                      ),
-                      ListTile(
-                        leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                        title: const Text('환경 설정', style: TextStyle(color: kDark)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/account');
-                        },
-                      ),
-                      ListTile(
-                        leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                        title: const Text('마이페이지', style: TextStyle(color: kDark)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/account');
-                        },
-                      ),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16, bottom: 12),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: GestureDetector(
-                            onTap: () async {
-                              Navigator.pop(context);
-                              await auth.signOut();
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 48),
+                        // ── 프로필 + 크래딧 박스 ──────────────
+                        Builder(builder: (context) {
+                          final ownerProfile = context.read<ProfilesProvider>()
+                              .profiles.where((p) => p.isOwner).firstOrNull;
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0x0AFFFFFF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: kGlassBorder),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  '로그아웃',
-                                  style: TextStyle(
-                                    color: kErrorColor.withOpacity(0.7),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
+                                // 프로필 정보
+                                if (ownerProfile != null) ...[
+                                  Text(
+                                    ownerProfile.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: kDark,
+                                    ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    ownerProfile.displayBirthDate,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: kDark.withOpacity(0.45),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Divider(color: kGlassBorder, height: 1),
+                                  const SizedBox(height: 14),
+                                ],
+                                // 플랜
+                                Row(
+                                  children: [
+                                    const Icon(Icons.star, color: kGold, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _planLabel(_plan),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: kDark,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.logout,
-                                  color: kErrorColor.withOpacity(0.7),
-                                  size: 18,
+                                const SizedBox(height: 10),
+                                // 토큰 잔량
+                                Row(
+                                  children: [
+                                    const Icon(Icons.bolt, color: kGold, size: 14),
+                                    const SizedBox(width: 4),
+                                    const Text(
+                                      '남은 토큰',
+                                      style: TextStyle(fontSize: 12, color: kTextMuted),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      _tokensRemaining != null
+                                          ? '$_tokensRemaining${_tokensLimit != null ? " / $_tokensLimit" : ""}'
+                                          : '—',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: kGoldLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_tokensRemaining != null && _tokensLimit != null && _tokensLimit! > 0) ...[
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: _tokensRemaining! / _tokensLimit!,
+                                      backgroundColor: kGlassBorder,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(kGold),
+                                      minHeight: 4,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 14),
+                                // 토큰 충전 버튼
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    context.push('/account');
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(vertical: 11),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFFDD835), kGold],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: kGold.withOpacity(0.22),
+                                          blurRadius: 12,
+                                          spreadRadius: 0,
+                                          offset: Offset.zero,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.bolt, color: kInk, size: 14),
+                                        SizedBox(width: 5),
+                                        Text(
+                                          '토큰 충전',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: kInk,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
+                          );
+                        }),
+                        const SizedBox(height: 24),
+                        Divider(color: kGlassBorder, height: 1),
+                        const SizedBox(height: 8),
+                        // ── 메뉴 ──────────────────────────────
+                        ListTile(
+                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          title: const Text('궁합 분석', style: TextStyle(color: kDark)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/compatibility');
+                          },
+                        ),
+                        ListTile(
+                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          title: const Text('환경 설정', style: TextStyle(color: kDark)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/settings');
+                          },
+                        ),
+                        ListTile(
+                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          title: const Text('마이페이지', style: TextStyle(color: kDark)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/account');
+                          },
+                        ),
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16, bottom: 12),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () async {
+                                Navigator.pop(context);
+                                await auth.signOut();
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '로그아웃',
+                                    style: TextStyle(
+                                      color: kErrorColor.withOpacity(0.7),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.logout,
+                                    color: kErrorColor.withOpacity(0.7),
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   ), // Padding
                 ),
               ],
@@ -555,14 +861,30 @@ class _ProfileCard extends StatelessWidget {
   };
 
   static String _zodiacEmoji(Profile profile) {
-    // 일주(日柱)의 지지(地支) 글자로 동물 결정
-    final chart = profile.chartData;
-    if (chart != null) {
-      final dayPillar = chart['dayPillar'] as Map<String, dynamic>?;
-      final branch = (dayPillar?['branch'] as Map<String, dynamic>?)?['char'] as String?;
-      if (branch != null) return _branchEmojiMap[branch] ?? '🐾';
-    }
+    try {
+      final chart = profile.chartData;
+      if (chart != null) {
+        final dayPillar = chart['dayPillar'] as Map<String, dynamic>?;
+        final branch = (dayPillar?['branch'] as Map<String, dynamic>?)?['char'] as String?;
+        if (branch != null) return _branchEmojiMap[branch] ?? '🐾';
+      }
+    } catch (_) {}
     return '🐾';
+  }
+
+  static Color _dayPillarColor(Profile profile) {
+    try {
+      final day = profile.chartData?['dayPillar'] as Map<String, dynamic>?;
+      final stem = (day?['stem'] as Map<String, dynamic>?)?['char'] as String?;
+      switch (stem) {
+        case '갑': case '을': return kWoodColor;
+        case '병': case '정': return kFireColor;
+        case '무': case '기': return kEarthColor;
+        case '경': case '신': return kMetalColor;
+        case '임': case '계': return kWaterColor;
+      }
+    } catch (_) {}
+    return kGold;
   }
 
   @override
@@ -638,21 +960,24 @@ class _ProfileCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [
-                    kGold.withOpacity(0.15),
-                    kGold.withOpacity(0.05),
-                  ]),
-                  border: Border.all(color: kGold.withOpacity(0.2)),
-                ),
-                child: Text(
-                  _zodiacEmoji(profile),
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ),
+              Builder(builder: (context) {
+                final color = _dayPillarColor(profile);
+                return Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      color.withOpacity(0.20),
+                      color.withOpacity(0.06),
+                    ]),
+                    border: Border.all(color: color.withOpacity(0.35)),
+                  ),
+                  child: Text(
+                    _zodiacEmoji(profile),
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                );
+              }),
               if (isOwner)
                 Container(
                   padding:

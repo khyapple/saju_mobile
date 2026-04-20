@@ -14,6 +14,7 @@ import 'screens/profiles/profile_detail_screen.dart';
 import 'screens/profiles/add_profile_screen.dart';
 import 'screens/consultation/consultation_screen.dart';
 import 'screens/account/account_screen.dart';
+import 'screens/account/settings_screen.dart';
 import 'screens/profiles/life_events_screen.dart';
 import 'screens/compatibility/compatibility_screen.dart';
 import 'screens/splash/splash_screen.dart';
@@ -69,6 +70,7 @@ class _SajuAppState extends State<SajuApp> {
         ),
         GoRoute(path: '/compatibility', builder: (_, __) => const CompatibilityScreen()),
         GoRoute(path: '/account', builder: (_, __) => const AccountScreen()),
+        GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       ],
     );
   }

@@ -34,6 +34,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   // Chat history for sidebar
   List<Map<String, dynamic>> _chatSessions = [];
 
+  // 크래딧 정보
+  int? _tokensRemaining;
+  int? _tokensLimit;
+
   @override
   void initState() {
     super.initState();
@@ -136,10 +140,11 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   Future<void> _initSession() async {
     setState(() => _loading = true);
     try {
-      // 프로필 컨텍스트 + 세션 목록을 병렬 로드 (세션 자동 생성하지 않음)
+      // 프로필 컨텍스트 + 세션 목록 + 구독 정보를 병렬 로드
       await Future.wait([
         _loadProfileContext(),
         _refreshChatSessions(),
+        _loadCredits(),
       ]);
       // 기존 세션이 있으면 가장 최근 것 자동 로드 (이어 채팅)
       if (_chatSessions.isNotEmpty) {
@@ -162,6 +167,20 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       setState(() => _error = '채팅을 시작할 수 없습니다.');
     } finally {
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadCredits() async {
+    try {
+      final sub = await _api.getSubscription();
+      if (mounted) {
+        setState(() {
+          _tokensRemaining = (sub['tokensRemaining'] as num?)?.toInt();
+          _tokensLimit = (sub['tokensLimit'] as num?)?.toInt();
+        });
+      }
+    } catch (e) {
+      debugPrint('=== load credits failed: $e');
     }
   }
 
@@ -278,6 +297,16 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     });
   }
 
+  Color get _creditColor {
+    if (_tokensRemaining == null || _tokensLimit == null || _tokensLimit! == 0) {
+      return kGoldLight;
+    }
+    final ratio = _tokensRemaining! / _tokensLimit!;
+    if (ratio <= 0.1) return kAccentRed;
+    if (ratio <= 0.3) return const Color(0xFFFF9500);
+    return kGoldLight;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,30 +331,39 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 color: kDark,
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: kGold.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: kGold.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: kGoldGlow,
-                    blurRadius: 8,
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: const Text(
-                'Claude AI',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: kGoldLight,
-                  fontWeight: FontWeight.w700,
+            if (_tokensRemaining != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _creditColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _creditColor.withOpacity(0.4)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _creditColor.withOpacity(0.2),
+                      blurRadius: 8,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bolt, size: 10, color: _creditColor),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$_tokensRemaining 크래딧',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: _creditColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ],
         ),
         actions: [

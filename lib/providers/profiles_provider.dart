@@ -21,6 +21,22 @@ class ProfilesProvider extends ChangeNotifier {
     try {
       final fetched = await _api.getProfiles();
       _profiles = await _applySavedOrder(fetched);
+      notifyListeners(); // 목록 먼저 표시
+
+      // 상세 API로 전체 chartData 보장 (일주동물 이모지 정확히 표시)
+      final details = await Future.wait(
+        _profiles.map((p) async {
+          try {
+            final raw = await _api.getProfile(p.id);
+            final chartData = (raw['chart_data'] ?? raw['chartData']) as Map<String, dynamic>?;
+            return p.copyWith(chartData: chartData);
+          } catch (_) {
+            return p;
+          }
+        }),
+      );
+      _profiles = details;
+      notifyListeners();
     } catch (e, stack) {
       debugPrint('=== PROFILES ERROR: $e');
       debugPrint('=== STACK: $stack');

@@ -66,4 +66,21 @@ class Profile {
     if (gender == null) return '';
     return gender == 'male' ? '남성' : '여성';
   }
+
+  Profile copyWith({Map<String, dynamic>? chartData}) {
+    return Profile(
+      id: id,
+      name: name,
+      birthDate: birthDate,
+      birthHour: birthHour,
+      birthHourPrecision: birthHourPrecision,
+      gender: gender,
+      calendarType: calendarType,
+      chartData: chartData ?? this.chartData,
+      interpretation: interpretation,
+      isOwner: isOwner,
+      createdAt: createdAt,
+      relationship: relationship,
+    );
+  }
 }

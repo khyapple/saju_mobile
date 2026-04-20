@@ -174,6 +174,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                 indicatorColor: kDancheongRed,
                 indicatorSize: TabBarIndicatorSize.label,
                 labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                splashFactory: NoSplash.splashFactory,
                 tabs: const [
                   Tab(text: '사주'),
                   Tab(text: '해석'),
@@ -198,18 +200,52 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   ],
                 ),
       ),
-      floatingActionButton: SizedBox(
-        width: 44,
-        height: 44,
-        child: FloatingActionButton(
-          heroTag: 'chat',
-          backgroundColor: kGold,
-          onPressed: () => context.push('/profiles/${widget.profileId}/consultation'),
-          elevation: 4,
-          shape: const CircleBorder(),
-          child: const Icon(Icons.chat_bubble_outline, color: kInk, size: 20),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFDD835), kGold],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: kGold.withOpacity(0.22),
+              blurRadius: 12,
+              spreadRadius: 0,
+              offset: Offset.zero,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(28),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: () => context.push('/profiles/${widget.profileId}/consultation'),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, color: kInk, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'AI 사주상담',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: kInk,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -252,7 +288,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           _elementsDescription(chart),
           const SizedBox(height: 16),
           _luckTimeline(chart),
-          const SizedBox(height: 80),
+          const SizedBox(height: 100),
         ],
       ),
     ), // SingleChildScrollView
@@ -1396,54 +1432,25 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
               ],
             ),
           ),
-          // Refresh button
-          Positioned(
-            bottom: 16, right: 16,
-            child: FloatingActionButton.small(
-              backgroundColor: const Color(0x30FFFFFF),
-              onPressed: _generateInterpretation,
-              tooltip: '해석 재생성',
-              child: _generating
-                  ? const SizedBox(width: 18, height: 18,
-                      child: CircularProgressIndicator(color: kGold, strokeWidth: 2))
-                  : const Icon(Icons.refresh, color: kGold, size: 18),
-            ),
-          ),
         ],
       );
     }
 
     // Fallback: raw markdown text
-    return Stack(
-      children: [
-        Markdown(
-          data: rawText!,
-          padding: EdgeInsets.fromLTRB(20, topPad + 20, 20, 80),
-          styleSheet: MarkdownStyleSheet(
-            p: const TextStyle(fontSize: 14, color: kDark, height: 1.7),
-            h1: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: kDark),
-            h2: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: kDark),
-            h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: kSecondaryGold),
-            strong: const TextStyle(fontWeight: FontWeight.w700, color: kDark),
-            blockquoteDecoration: BoxDecoration(
-              color: kGold.withOpacity(0.08),
-              border: const Border(left: BorderSide(color: kGold, width: 3)),
-            ),
-          ),
+    return Markdown(
+      data: rawText!,
+      padding: EdgeInsets.fromLTRB(20, topPad + 20, 20, 80),
+      styleSheet: MarkdownStyleSheet(
+        p: const TextStyle(fontSize: 14, color: kDark, height: 1.7),
+        h1: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: kDark),
+        h2: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: kDark),
+        h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: kSecondaryGold),
+        strong: const TextStyle(fontWeight: FontWeight.w700, color: kDark),
+        blockquoteDecoration: BoxDecoration(
+          color: kGold.withOpacity(0.08),
+          border: const Border(left: BorderSide(color: kGold, width: 3)),
         ),
-        Positioned(
-          bottom: 16, right: 16,
-          child: FloatingActionButton.small(
-            backgroundColor: const Color(0x30FFFFFF),
-            onPressed: _generateInterpretation,
-            tooltip: '해석 재생성',
-            child: _generating
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(color: kGold, strokeWidth: 2))
-                : const Icon(Icons.refresh, color: kGold, size: 18),
-          ),
-        ),
-      ],
+      ),
     );
   }
 

@@ -69,7 +69,6 @@ class _AccountScreenState extends State<AccountScreen> {
     final plan = _subscription?['plan'] as String? ?? 'free';
     final tokens = _subscription?['tokensRemaining'] as int? ?? 0;
     final tokensLimit = _subscription?['tokensLimit'] as int?;
-    final promoDaysRemaining = _subscription?['promoDaysRemaining'] as int?;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -82,17 +81,20 @@ class _AccountScreenState extends State<AccountScreen> {
           icon: const Icon(Icons.arrow_back, color: kDark),
           onPressed: () => context.pop(),
         ),
-        title: const Text('계정',
+        title: const Text('마이페이지',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
       ),
       body: CosmicBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile card
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                // 프로필 카드
                 GlassCard(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -128,8 +130,12 @@ class _AccountScreenState extends State<AccountScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
+                _menuItem(icon: Icons.person_outline, label: '프로필 수정', onTap: () {}),
+                _menuItem(icon: Icons.alternate_email, label: '아이디 변경', onTap: () {}),
+                _menuItem(icon: Icons.lock_outline, label: '비밀번호 변경', onTap: () {}),
                 const SizedBox(height: 16),
-                // Subscription card — glass with gold accent
+                // 플랜 + 토큰 사용량 카드
                 GlassCard(
                   fillColor: kGold.withOpacity(0.08),
                   borderColor: kGold.withOpacity(0.3),
@@ -142,119 +148,69 @@ class _AccountScreenState extends State<AccountScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.star, color: kGold, size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _planLabel(plan),
-                                    style: const TextStyle(
-                                      fontSize: 15, fontWeight: FontWeight.w700, color: kDark),
-                                  ),
+                                const Icon(Icons.star, color: kGold, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _planLabel(plan),
+                                  style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w700, color: kDark),
                                 ),
+                                const Spacer(),
                                 TextButton(
                                   onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size.zero,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
                                   child: const Text('업그레이드',
-                                    style: TextStyle(color: kGold, fontSize: 13)),
+                                    style: TextStyle(color: kGold, fontSize: 12)),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            // Token usage bar
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('토큰 사용량',
+                                  style: TextStyle(fontSize: 12, color: kTextMuted)),
+                                Text(
+                                  tokensLimit != null && tokensLimit > 0
+                                      ? '$tokens / $tokensLimit'
+                                      : '$tokens개 남음',
+                                  style: const TextStyle(fontSize: 12, color: kTextMuted)),
+                              ],
+                            ),
                             if (tokensLimit != null && tokensLimit > 0) ...[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('토큰 사용량',
-                                    style: const TextStyle(fontSize: 11, color: kTextMuted)),
-                                  Text('$tokens / $tokensLimit',
-                                    style: const TextStyle(fontSize: 11, color: kTextMuted)),
-                                ],
-                              ),
                               const SizedBox(height: 6),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
-                                  value: tokensLimit > 0 ? tokens / tokensLimit : 0,
+                                  value: tokens / tokensLimit,
                                   backgroundColor: kGlassBorder,
-                                  valueColor: AlwaysStoppedAnimation<Color>(kGold),
+                                  valueColor: const AlwaysStoppedAnimation<Color>(kGold),
                                   minHeight: 6,
-                                ),
-                              ),
-                            ] else ...[
-                              Text('토큰 $tokens개 남음',
-                                style: const TextStyle(fontSize: 12, color: kTextMuted)),
-                            ],
-                            if (promoDaysRemaining != null && promoDaysRemaining > 0) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: kAccentRed.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: kAccentRed.withOpacity(0.3)),
-                                ),
-                                child: Text(
-                                  '프로모션 $promoDaysRemaining일 남음',
-                                  style: const TextStyle(
-                                    fontSize: 11, color: kAccentRed, fontWeight: FontWeight.w600),
                                 ),
                               ),
                             ],
                           ],
                         ),
                 ),
-                const SizedBox(height: 24),
-                Text('설정',
-                  style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600,
-                    color: kDark.withOpacity(0.4), letterSpacing: 0.5)),
-                const SizedBox(height: 8),
-                _menuItem(
-                  icon: Icons.notifications_outlined,
-                  label: '알림 설정',
-                  onTap: () {},
+                    ],
+                  ),
                 ),
-                _menuItem(
-                  icon: Icons.language,
-                  label: '언어 설정',
-                  onTap: () {},
-                ),
-                _menuItem(
-                  icon: Icons.lock_outline,
-                  label: '비밀번호 변경',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 16),
-                Text('지원',
-                  style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600,
-                    color: kDark.withOpacity(0.4), letterSpacing: 0.5)),
-                const SizedBox(height: 8),
-                _menuItem(
-                  icon: Icons.help_outline,
-                  label: '도움말',
-                  onTap: () {},
-                ),
-                _menuItem(
-                  icon: Icons.privacy_tip_outlined,
-                  label: '개인정보 처리방침',
-                  onTap: () {},
-                ),
-                _menuItem(
-                  icon: Icons.description_outlined,
-                  label: '서비스 이용약관',
-                  onTap: () {},
-                ),
-                const SizedBox(height: 16),
-                _menuItem(
+              ),
+              // 로그아웃 고정 하단
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                child: _menuItem(
                   icon: Icons.logout,
                   label: '로그아웃',
                   onTap: _signOut,
                   color: kErrorColor,
                 ),
-                const SizedBox(height: 32),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
