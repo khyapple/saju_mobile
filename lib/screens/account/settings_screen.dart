@@ -24,22 +24,24 @@ class SettingsScreen extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
       ),
       body: CosmicBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _sectionLabel('설정'),
-                _menuItem(icon: Icons.notifications_outlined, label: '알림 설정', onTap: () {}),
-                _menuItem(icon: Icons.language, label: '언어 설정', onTap: () {}),
-                const SizedBox(height: 16),
-                _sectionLabel('지원'),
-                _menuItem(icon: Icons.help_outline, label: '도움말', onTap: () {}),
-                _menuItem(icon: Icons.privacy_tip_outlined, label: '개인정보 처리방침', onTap: () {}),
-                _menuItem(icon: Icons.description_outlined, label: '서비스 이용약관', onTap: () {}),
-                const SizedBox(height: 32),
-              ],
+        child: SizedBox.expand(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionLabel('설정'),
+                  _menuItem(icon: Icons.notifications_outlined, label: '알림 설정', onTap: () {}),
+                  _menuItem(icon: Icons.language, label: '언어 설정', onTap: () {}),
+                  const SizedBox(height: 16),
+                  _sectionLabel('지원'),
+                  _menuItem(icon: Icons.help_outline, label: '도움말', onTap: () {}),
+                  _menuItem(icon: Icons.privacy_tip_outlined, label: '개인정보 처리방침', onTap: () {}),
+                  _menuItem(icon: Icons.description_outlined, label: '서비스 이용약관', onTap: () {}),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),

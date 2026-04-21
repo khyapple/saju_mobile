@@ -625,8 +625,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                     final isWaterBranch = branchColor == kWaterColor;
 
                     Widget charCard(String char, Color color, bool isWater) => Container(
-                      width: 40,
-                      height: 54,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -777,151 +777,190 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollCtrl) => Column(
           children: [
             // 핸들
-            Center(
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
+                width: 36, height: 4,
                 decoration: BoxDecoration(
                   color: kDark.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            // 헤더
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('이벤트 상세',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
-                IconButton(
-                  icon: const Icon(Icons.close, color: kTextMuted),
-                  onPressed: () => Navigator.pop(ctx),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+            // 닫기 버튼 행
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, color: kTextMuted, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            // 스크롤 영역
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollCtrl,
+                padding: EdgeInsets.fromLTRB(24, 4, 24, MediaQuery.of(ctx).viewInsets.bottom + 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 제목 (Notion 대제목)
+                    Text(
+                      event['title'] as String? ?? desc,
+                      style: const TextStyle(
+                        fontSize: 26, fontWeight: FontWeight.w800,
+                        color: kDark, height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 프로퍼티 블록
+                    _notionProp(
+                      icon: Icons.calendar_today_outlined,
+                      label: '날짜',
+                      value: dateText,
+                      valueColor: kDark,
+                    ),
+                    const SizedBox(height: 6),
+                    _notionProp(
+                      icon: Icons.flag_outlined,
+                      label: '영향도',
+                      value: impactLabel,
+                      valueColor: impactColor,
+                      valueBg: impactColor.withOpacity(0.15),
+                    ),
+                    if (category != null && category.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      _notionProp(
+                        icon: Icons.label_outline,
+                        label: '카테고리',
+                        value: category,
+                        valueColor: kDark,
+                      ),
+                    ],
+                    if (createdAt != null) ...[
+                      const SizedBox(height: 6),
+                      _notionProp(
+                        icon: Icons.access_time_outlined,
+                        label: '등록일',
+                        value: _formatCreatedAt(createdAt),
+                        valueColor: kTextMuted,
+                      ),
+                    ],
+
+                    // 구분선
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Divider(color: kDark.withOpacity(0.1), thickness: 1),
+                    ),
+
+                    // 본문
+                    if (desc.isNotEmpty)
+                      Text(
+                        desc,
+                        style: const TextStyle(
+                          fontSize: 15, color: kDark, height: 1.8,
+                        ),
+                      ),
+
+                    const SizedBox(height: 32),
+
+                    // 수정/삭제 버튼
+                    if (eventId != null && eventId.isNotEmpty)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _showEditEventSheet(event);
+                              },
+                              icon: const Icon(Icons.edit_outlined, size: 18, color: kInk),
+                              label: const Text('수정',
+                                style: TextStyle(color: kInk, fontWeight: FontWeight.w700)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kGold,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                Navigator.pop(ctx);
+                                await _confirmDeleteEvent(eventId);
+                              },
+                              icon: const Icon(Icons.delete_outline, size: 18, color: kErrorColor),
+                              label: const Text('삭제',
+                                style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: kErrorColor.withOpacity(0.5)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // 날짜
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0x14FFFFFF),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: kGlassBorder),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.calendar_today, color: kGold, size: 14),
-                  const SizedBox(width: 8),
-                  Text(dateText,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
-                ],
               ),
             ),
-            const SizedBox(height: 16),
-            // 내용
-            const Text('내용',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kTextMuted)),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0x10FFFFFF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: kGlassBorder),
-              ),
-              child: Text(desc,
-                style: const TextStyle(fontSize: 14, color: kDark, height: 1.6)),
-            ),
-            const SizedBox(height: 16),
-            // 영향도
-            const Text('영향도',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kTextMuted)),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: impactColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: impactColor.withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.flag_outlined, color: impactColor, size: 14),
-                  const SizedBox(width: 8),
-                  Text(impactLabel,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: impactColor)),
-                ],
-              ),
-            ),
-            if (category != null && category.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('카테고리',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kTextMuted)),
-              const SizedBox(height: 6),
-              Text(category,
-                style: const TextStyle(fontSize: 14, color: kDark)),
-            ],
-            if (createdAt != null) ...[
-              const SizedBox(height: 16),
-              Text('등록일: ${_formatCreatedAt(createdAt)}',
-                style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.4))),
-            ],
-            const SizedBox(height: 24),
-            // 수정/삭제 버튼
-            if (eventId != null && eventId.isNotEmpty)
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _showEditEventSheet(event);
-                      },
-                      icon: const Icon(Icons.edit_outlined, size: 18, color: kInk),
-                      label: const Text('수정',
-                        style: TextStyle(color: kInk, fontWeight: FontWeight.w700)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kGold,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        await _confirmDeleteEvent(eventId);
-                      },
-                      icon: const Icon(Icons.delete_outline, size: 18, color: kErrorColor),
-                      label: const Text('삭제',
-                        style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: kErrorColor.withOpacity(0.5)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _notionProp({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+    Color? valueBg,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Row(
+            children: [
+              Icon(icon, size: 14, color: kTextMuted),
+              const SizedBox(width: 6),
+              Text(label,
+                style: const TextStyle(fontSize: 13, color: kTextMuted)),
+            ],
+          ),
+        ),
+        valueBg != null
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: valueBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(value,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor)),
+              )
+            : Text(value,
+                style: TextStyle(fontSize: 13, color: valueColor)),
+      ],
     );
   }
 
@@ -1420,6 +1459,17 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final topPad = MediaQuery.of(context).padding.top + kToolbarHeight + 52;
     // Show section-based display if sections available
     if (sections != null && sections.isNotEmpty) {
+      // 종합 평가는 맨 마지막으로 정렬
+      final sorted = [...sections];
+      sorted.sort((a, b) {
+        final aTitle = ((a as Map<String, dynamic>)['title'] as String? ?? '');
+        final bTitle = ((b as Map<String, dynamic>)['title'] as String? ?? '');
+        final aIsOverall = aTitle.contains('종합');
+        final bIsOverall = bTitle.contains('종합');
+        if (aIsOverall == bIsOverall) return 0;
+        return aIsOverall ? 1 : -1;
+      });
+
       return Stack(
         children: [
           SingleChildScrollView(
@@ -1427,8 +1477,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (int i = 0; i < sections.length; i++)
-                  _sectionCard(i, sections[i] as Map<String, dynamic>),
+                for (int i = 0; i < sorted.length; i++)
+                  Builder(builder: (_) {
+                    final sec = sorted[i] as Map<String, dynamic>;
+                    final title = sec['title'] as String? ?? '';
+                    final isBlurred = !title.contains('성격');
+                    return _sectionCard(i, sec, blurred: isBlurred);
+                  }),
               ],
             ),
           ),
@@ -1498,12 +1553,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
 
   static const _sectionBorderColors = [kDancheongBlue, kDancheongRed, kDancheongYellow];
 
-  Widget _sectionCard(int index, Map<String, dynamic> section) {
+  Widget _sectionCard(int index, Map<String, dynamic> section, {bool blurred = false}) {
     final title = section['title'] as String? ?? '';
     final summary = section['summary'] as String? ?? '';
     final content = section['content'] as String? ?? '';
     final isExpanded = _expandedSections.contains(index);
-    final borderColor = _sectionBorderColors[index % _sectionBorderColors.length];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1517,90 +1571,157 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: kGlassBorder),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Image.asset('assets/images/tab_selected.png', width: 14, height: 14, fit: BoxFit.contain),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Image.asset('assets/images/tab_selected.png',
+                                width: 14, height: 14, fit: BoxFit.contain),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(title,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700, color: kGold)),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(title,
-                        style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700, color: kGold)),
+                      if (summary.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(summary,
+                            style: const TextStyle(
+                                fontSize: 13, color: kTextMuted, height: 1.5)),
+                      ],
                     ],
                   ),
-                  if (summary.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(summary,
-                      style: const TextStyle(fontSize: 13, color: kTextMuted, height: 1.5)),
+                ),
+
+                if (content.isNotEmpty) ...[
+                  // 펼치기/접기 버튼 (공통)
+                  InkWell(
+                    onTap: () => setState(() {
+                      if (isExpanded) {
+                        _expandedSections.remove(index);
+                      } else {
+                        _expandedSections.add(index);
+                      }
+                    }),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Icon(
+                          isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                          size: 18, color: kGold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isExpanded) ...[
+                    if (blurred) ...[
+                      // 블러 콘텐츠 + 버튼 모두 Stack 안에
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0x0AFFFFFF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRect(
+                                    child: SizedBox(
+                                      height: 92,
+                                      width: double.infinity,
+                                      child: Text(content,
+                                          style: const TextStyle(
+                                              fontSize: 13, color: kDark, height: 1.7)),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 52), // 버튼 공간
+                                ],
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0x000E1228),
+                                        Color(0xBB0E1228),
+                                        Color(0xFF0E1228),
+                                      ],
+                                      stops: [0.0, 0.45, 1.0],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 12,
+                              left: 12, right: 12,
+                              child: ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: kGold,
+                                  foregroundColor: kInk,
+                                  padding: const EdgeInsets.symmetric(vertical: 13),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text('토큰 추가하고 분석 전체 보기',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // 일반 콘텐츠 (성격 및 기질)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Container(
+                          constraints: const BoxConstraints(maxHeight: 240),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0x0AFFFFFF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Scrollbar(
+                            thumbVisibility: true,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(content,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: kDark, height: 1.7)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            ),
-            // Expand button
-            if (content.isNotEmpty)
-              InkWell(
-                onTap: () => setState(() {
-                  if (isExpanded) {
-                    _expandedSections.remove(index);
-                  } else {
-                    _expandedSections.add(index);
-                  }
-                }),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Icon(
-                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      size: 18, color: kGold,
-                    ),
-                  ),
-                ),
-              ),
-            // Expanded content
-            if (isExpanded && content.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Container(
-                  constraints: const BoxConstraints(maxHeight: 240),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0x0AFFFFFF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Scrollbar(
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(content,
-                        style: const TextStyle(fontSize: 13, color: kDark, height: 1.7)),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-                  ),
-                ],
-              ),
+                ] else
+                  const SizedBox(height: 12),
+              ],
             ),
           ),
         ),

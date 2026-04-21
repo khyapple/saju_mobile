@@ -175,7 +175,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       final sub = await _api.getSubscription();
       if (mounted) {
         setState(() {
-          _tokensRemaining = (sub['tokensRemaining'] as num?)?.toInt();
+          _tokensRemaining = (sub['remaining'] as num?)?.toInt();
           _tokensLimit = (sub['tokensLimit'] as num?)?.toInt();
         });
       }

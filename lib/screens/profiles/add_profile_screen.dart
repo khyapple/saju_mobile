@@ -45,19 +45,160 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   }
 
   Future<void> _pickDate() async {
-    final date = await showDatePicker(
+    final initial = _birthDate ?? DateTime(1990);
+    int year = initial.year;
+    int month = initial.month;
+    int day = initial.day;
+
+    final now = DateTime.now();
+    final years = List.generate(now.year - 1900 + 1, (i) => 1900 + i).reversed.toList();
+    final months = List.generate(12, (i) => i + 1);
+
+    int daysInMonth(int y, int m) => DateTime(y, m + 1, 0).day;
+
+    await showModalBottomSheet(
       context: context,
-      initialDate: DateTime(1990),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: kGold, onPrimary: kDark),
-        ),
-        child: child!,
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setSheetState) {
+          final days = List.generate(daysInMonth(year, month), (i) => i + 1);
+          if (day > days.length) day = days.length;
+
+          final yearCtrl = FixedExtentScrollController(
+              initialItem: years.indexOf(year).clamp(0, years.length - 1));
+          final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
+          final dayCtrl = FixedExtentScrollController(initialItem: day - 1);
+
+          Widget _wheel(List<int> items, FixedExtentScrollController ctrl,
+              String Function(int) label, void Function(int) onChange) {
+            return Expanded(
+              child: ListWheelScrollView.useDelegate(
+                controller: ctrl,
+                itemExtent: 44,
+                physics: const FixedExtentScrollPhysics(),
+                perspective: 0.003,
+                diameterRatio: 1.6,
+                onSelectedItemChanged: (i) {
+                  onChange(items[i]);
+                  setSheetState(() {});
+                },
+                childDelegate: ListWheelChildBuilderDelegate(
+                  childCount: items.length,
+                  builder: (_, i) {
+                    final selected = ctrl.selectedItem == i;
+                    return Center(
+                      child: Text(
+                        label(items[i]),
+                        style: TextStyle(
+                          fontSize: selected ? 18 : 15,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                          color: selected ? kGold : kDark.withOpacity(0.35),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          }
+
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xF2060611),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: const Border(top: BorderSide(color: Color(0x33FFFFFF), width: 0.5)),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 36, height: 4,
+                        decoration: BoxDecoration(
+                          color: kGlassBorder, borderRadius: BorderRadius.circular(2)),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('생년월일 선택',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
+                      const SizedBox(height: 16),
+
+                      // 선택 하이라이트 바
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // 휠들
+                          SizedBox(
+                            height: 200,
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 16),
+                                _wheel(years, yearCtrl, (v) => '$v년', (v) => year = v),
+                                _wheel(months, monthCtrl, (v) => '$v월', (v) => month = v),
+                                _wheel(days, dayCtrl, (v) => '$v일', (v) => day = v),
+                                const SizedBox(width: 16),
+                              ],
+                            ),
+                          ),
+                          // 중앙 선택 영역 하이라이트
+                          IgnorePointer(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 78),
+                                Container(
+                                  height: 44,
+                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: kGold.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: kGold.withOpacity(0.2)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() => _birthDate = DateTime(year, month, day));
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kGold,
+                              foregroundColor: kInk,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('선택 완료',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        });
+      },
     );
-    if (date != null) setState(() => _birthDate = date);
   }
 
   Future<void> _submit() async {
@@ -165,45 +306,67 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                 const SizedBox(height: 20),
                 _label('태어난 시간'),
                 const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(child: _chip('정확히', 'exact', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
-                  const SizedBox(width: 8),
-                  Expanded(child: _chip('대략', 'rough', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
-                  const SizedBox(width: 8),
-                  Expanded(child: _chip('모름', 'unknown', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
-                ]),
-                if (_birthHourPrecision == 'exact') ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _hours.map((h) {
-                      final selected = _birthHour == h.$3;
-                      return GestureDetector(
-                        onTap: () => setState(() => _birthHour = h.$3),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: selected ? kDancheongRed : const Color(0x0AFFFFFF),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: selected ? kDancheongRed : kGlassBorder),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(h.$1,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                                  color: selected ? kDark : kDark)),
-                              Text(h.$2,
-                                style: TextStyle(fontSize: 9,
-                                  color: selected ? kDark.withOpacity(0.8) : kTextMuted)),
-                            ],
+                ...[
+                  _hours.sublist(0, 6),
+                  _hours.sublist(6, 12),
+                ].map((row) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: List.generate(row.length * 2 - 1, (i) {
+                      if (i.isOdd) return const SizedBox(width: 6);
+                      final h = row[i ~/ 2];
+                      final selected = _birthHour == h.$3 && _birthHourPrecision != 'unknown';
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            _birthHour = h.$3;
+                            _birthHourPrecision = 'exact';
+                          }),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: selected ? kGold.withOpacity(0.2) : const Color(0x0AFFFFFF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: selected ? kGold : kGlassBorder),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(h.$1,
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                                    color: selected ? kGold : kDark)),
+                                Text(h.$2,
+                                  style: TextStyle(fontSize: 8,
+                                    color: selected ? kGold.withOpacity(0.8) : kTextMuted)),
+                              ],
+                            ),
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ),
-                ],
+                )),
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _birthHour = null;
+                    _birthHourPrecision = 'unknown';
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _birthHourPrecision == 'unknown' ? kGold.withOpacity(0.2) : const Color(0x0AFFFFFF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _birthHourPrecision == 'unknown' ? kGold : kGlassBorder),
+                    ),
+                    child: Center(
+                      child: Text('모름',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                          color: _birthHourPrecision == 'unknown' ? kGold : kDark)),
+                    ),
+                  ),
+                ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Container(

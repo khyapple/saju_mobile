@@ -204,6 +204,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
 
     final ownerProfile = profiles.where((p) => p.isOwner).firstOrNull
         ?? (profiles.isNotEmpty ? profiles.first : null);
+    final nonOwnerProfiles = profiles.where((p) => !p.isOwner).toList();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -243,42 +244,56 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     sliver: SliverToBoxAdapter(
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: Stack(
-                              alignment: Alignment.center,
+                      child: GestureDetector(
+                        onTap: ownerProfile != null && !_isDragging
+                            ? () => context.push('/profiles/${ownerProfile.id}')
+                            : null,
+                        child: Row(
+                          children: [
+                            () {
+                              final color = ownerProfile != null
+                                  ? _ProfileCard._dayPillarColor(ownerProfile)
+                                  : kGold;
+                              final emoji = ownerProfile != null
+                                  ? _ProfileCard._zodiacEmoji(ownerProfile)
+                                  : '🐾';
+                              return Container(
+                                width: 52, height: 52,
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: color.withOpacity(0.5), width: 1.5),
+                                ),
+                                child: Center(
+                                  child: Text(emoji,
+                                    style: const TextStyle(fontSize: 26)),
+                                ),
+                              );
+                            }(),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.person, color: kGold, size: 30),
-                                Image.asset('assets/images/profile_frame.png',
-                                    width: 56, height: 56, fit: BoxFit.contain),
+                                Text(
+                                  '안녕하세요, ${auth.displayName}님',
+                                  style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
+                                  ),
+                                ),
+                                Text(
+                                  _isDragging ? '놓을 위치로 드래그하세요' : '나의 사주 프로필 →',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _isDragging
+                                        ? kGold.withOpacity(0.8)
+                                        : kDark.withOpacity(0.4),
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '안녕하세요, ${auth.displayName}님',
-                                style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
-                                ),
-                              ),
-                              Text(
-                                _isDragging ? '놓을 위치로 드래그하세요' : '나의 사주 프로필',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: _isDragging
-                                      ? kGold.withOpacity(0.8)
-                                      : kDark.withOpacity(0.4),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -365,8 +380,8 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                 childAspectRatio: 0.80,
                               ),
                               itemCount: _isDragging
-                                  ? display.length          // placeholder 포함, 추가버튼 없음
-                                  : profiles.length + 1,    // 프로필 + 추가버튼
+                                  ? display.length
+                                  : nonOwnerProfiles.length + 1,
                               itemBuilder: (context, index) {
                                 // 드래그 중
                                 if (_isDragging) {
@@ -375,14 +390,14 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                   return _ProfileCard(profile: item);
                                 }
                                 // 일반 모드 - 추가 버튼
-                                if (index == profiles.length) {
+                                if (index == nonOwnerProfiles.length) {
                                   return GestureDetector(
                                     onTap: () => context.push('/profiles/new'),
                                     child: const _AddProfileCard(),
                                   );
                                 }
-                                // 일반 모드 - 프로필 카드 (탭으로 이동)
-                                final profile = profiles[index];
+                                // 일반 모드 - 프로필 카드
+                                final profile = nonOwnerProfiles[index];
                                 return GestureDetector(
                                   onTap: () =>
                                       context.push('/profiles/${profile.id}'),
@@ -441,12 +456,10 @@ class _ProfilesScreenState extends State<ProfilesScreen>
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
           onTap: () {
-            if (profiles.length == 1) {
+            if (ownerProfile != null) {
+              context.push('/profiles/${ownerProfile.id}/consultation');
+            } else if (profiles.isNotEmpty) {
               context.push('/profiles/${profiles.first.id}/consultation');
-            } else if (ownerProfile != null) {
-              _showProfilePicker(profiles);
-            } else {
-              _showProfilePicker(profiles);
             }
           },
           child: Padding(
@@ -616,11 +629,11 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                 // 콘텐츠
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 8),
                         // ── 프로필 + 크래딧 박스 ──────────────
                         Builder(builder: (context) {
                           final ownerProfile = context.read<ProfilesProvider>()
@@ -963,7 +976,7 @@ class _ProfileCard extends StatelessWidget {
               Builder(builder: (context) {
                 final color = _dayPillarColor(profile);
                 return Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(colors: [
@@ -974,52 +987,10 @@ class _ProfileCard extends StatelessWidget {
                   ),
                   child: Text(
                     _zodiacEmoji(profile),
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 24),
                   ),
                 );
               }),
-              if (isOwner)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [
-                      kDancheongRed,
-                      kDancheongRed.withOpacity(0.7)
-                    ]),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: kDancheongRed.withOpacity(0.3), blurRadius: 8)
-                    ],
-                  ),
-                  child: const Text('나의 사주',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3)),
-                )
-              else if (profile.relationship != null &&
-                  profile.relationship!.isNotEmpty)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0x0AFFFFFF),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: kGlassBorder),
-                  ),
-                  child: Text(
-                    profile.relationship!,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: kDark.withOpacity(0.5),
-                        fontWeight: FontWeight.w500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
             ],
           ),
           const Spacer(),
@@ -1041,14 +1012,54 @@ class _ProfileCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          if (profile.displayGender.isNotEmpty) ...[
+          if (profile.birthHour != null) ...[
             const SizedBox(height: 2),
-            Text(profile.displayGender,
+            Text('${profile.birthHour}시생',
                 style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.35))),
+          ] else if (profile.birthHourPrecision == 'unknown') ...[
+            const SizedBox(height: 2),
+            Text('시간 미상',
+                style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.25))),
           ],
               ],
                 ), // Column
               ), // Padding  ⑥
+              // ⑤ 뱃지 — 카드 상단 우측
+              if (isOwner)
+                Positioned(
+                  top: 10, right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        kDancheongRed, kDancheongRed.withOpacity(0.7)]),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(
+                          color: kDancheongRed.withOpacity(0.3), blurRadius: 8)],
+                    ),
+                    child: const Text('나의 사주',
+                        style: TextStyle(
+                            fontSize: 10, color: Colors.white,
+                            fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                  ),
+                )
+              else if (profile.relationship != null &&
+                  profile.relationship!.isNotEmpty)
+                Positioned(
+                  top: 10, right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x0AFFFFFF),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: kGlassBorder),
+                    ),
+                    child: Text(profile.relationship!,
+                        style: TextStyle(
+                            fontSize: 10, color: kDark.withOpacity(0.5),
+                            fontWeight: FontWeight.w500)),
+                  ),
+                ),
             ], // Stack children
           ), // Stack
           ), // BackdropFilter
@@ -1082,6 +1093,7 @@ class _AddProfileCard extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
             child: Stack(
+            alignment: Alignment.center,
             children: [
               // 베이스
               Container(
@@ -1123,6 +1135,7 @@ class _AddProfileCard extends StatelessWidget {
               // 콘텐츠
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
