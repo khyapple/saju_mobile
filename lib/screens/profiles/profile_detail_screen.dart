@@ -820,7 +820,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   children: [
                     // 제목 (Notion 대제목)
                     Text(
-                      event['title'] as String? ?? desc,
+                      event['title'] as String? ?? '',
                       style: const TextStyle(
                         fontSize: 26, fontWeight: FontWeight.w800,
                         color: kDark, height: 1.3,
@@ -2203,7 +2203,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
       widget.onAdded();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _error = '이벤트 추가에 실패했습니다.');
+      setState(() => _error = _isEditMode ? '이벤트 수정에 실패했습니다.' : '이벤트 추가에 실패했습니다.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
