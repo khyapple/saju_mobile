@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'constants/colors.dart';
+import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/profiles_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -87,22 +89,26 @@ class _SajuAppState extends State<SajuApp> {
       providers: [
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider(create: (_) => ProfilesProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
-      child: MaterialApp.router(
-        title: '사주',
-        debugShowCheckedModeBanner: false,
-        theme: _buildTheme(),
-        routerConfig: _router,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('ko'),
-          Locale('en'),
-        ],
-        locale: const Locale('ko'),
+      child: Consumer<LocaleProvider>(
+        builder: (_, localeProvider, __) => MaterialApp.router(
+          title: '사주',
+          debugShowCheckedModeBanner: false,
+          theme: _buildTheme(),
+          routerConfig: _router,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('ko'),
+            Locale('en'),
+          ],
+          locale: localeProvider.locale,
+        ),
       ),
     );
   }

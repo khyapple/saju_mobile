@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/profiles_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/dancheong_bar.dart';
@@ -56,6 +57,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
     int daysInMonth(int y, int m) => DateTime(y, m + 1, 0).day;
 
+    final l10n = AppLocalizations.of(context);
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -125,8 +127,8 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                           color: kGlassBorder, borderRadius: BorderRadius.circular(2)),
                       ),
                       const SizedBox(height: 20),
-                      const Text('생년월일 선택',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
+                      Text(l10n.selectBirthDate,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
                       const SizedBox(height: 16),
 
                       // 선택 하이라이트 바
@@ -139,9 +141,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                             child: Row(
                               children: [
                                 const SizedBox(width: 16),
-                                _wheel(years, yearCtrl, (v) => '$v년', (v) => year = v),
-                                _wheel(months, monthCtrl, (v) => '$v월', (v) => month = v),
-                                _wheel(days, dayCtrl, (v) => '$v일', (v) => day = v),
+                                _wheel(years, yearCtrl, (v) => '$v${l10n.year}', (v) => year = v),
+                                _wheel(months, monthCtrl, (v) => '$v${l10n.month}', (v) => month = v),
+                                _wheel(days, dayCtrl, (v) => '$v${l10n.day}', (v) => day = v),
                                 const SizedBox(width: 16),
                               ],
                             ),
@@ -184,8 +186,8 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
                             ),
-                            child: const Text('선택 완료',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            child: Text(l10n.done,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                           ),
                         ),
                       ),
@@ -202,12 +204,13 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = '이름을 입력해주세요.');
+      setState(() => _error = l10n.nameRequired);
       return;
     }
     if (_birthDate == null) {
-      setState(() => _error = '생년월일을 선택해주세요.');
+      setState(() => _error = l10n.birthDateRequired);
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -231,7 +234,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
       }
       if (mounted) context.pop();
     } catch (e) {
-      setState(() => _error = '프로필 생성에 실패했습니다.');
+      setState(() => _error = l10n.createProfileFailed);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -239,6 +242,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -250,9 +254,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
           icon: const Icon(Icons.close, color: kDark),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          '프로필 추가',
-          style: TextStyle(
+        title: Text(
+          l10n.addProfile,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: kDark,
@@ -268,43 +272,43 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
               children: [
                 const DancheongBar(),
                 const SizedBox(height: 16),
-                const Text(
-                  '지인의 사주를 분석하려면 기본 정보를 입력하세요',
-                  style: TextStyle(fontSize: 13, color: kTextMuted),
+                Text(
+                  l10n.addProfileDesc,
+                  style: const TextStyle(fontSize: 13, color: kTextMuted),
                 ),
                 const SizedBox(height: 24),
-                _label('이름'),
+                _label(l10n.name),
                 const SizedBox(height: 6),
-                _field(controller: _nameCtrl, hint: '홍길동'),
+                _field(controller: _nameCtrl, hint: l10n.nameHint),
                 const SizedBox(height: 20),
-                _label('관계'),
+                _label(l10n.relationship),
                 const SizedBox(height: 6),
-                _field(controller: _relationshipCtrl, hint: '예) 친구, 배우자, 부모님 (선택사항)'),
+                _field(controller: _relationshipCtrl, hint: l10n.relationshipHint),
                 const SizedBox(height: 20),
-                _label('생년월일'),
+                _label(l10n.birthDate),
                 const SizedBox(height: 6),
                 GestureDetector(
                   onTap: _pickDate,
-                  child: _dateBox(),
+                  child: _dateBox(l10n),
                 ),
                 const SizedBox(height: 20),
-                _label('성별'),
+                _label(l10n.gender),
                 const SizedBox(height: 8),
                 Row(children: [
-                  Expanded(child: _chip('남성', 'male', _gender, (v) => setState(() => _gender = v))),
+                  Expanded(child: _chip(l10n.male, 'male', _gender, (v) => setState(() => _gender = v))),
                   const SizedBox(width: 12),
-                  Expanded(child: _chip('여성', 'female', _gender, (v) => setState(() => _gender = v))),
+                  Expanded(child: _chip(l10n.female, 'female', _gender, (v) => setState(() => _gender = v))),
                 ]),
                 const SizedBox(height: 20),
-                _label('달력 종류'),
+                _label(l10n.calendarType),
                 const SizedBox(height: 8),
                 Row(children: [
-                  Expanded(child: _chip('양력', 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
+                  Expanded(child: _chip(l10n.solar, 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
                   const SizedBox(width: 12),
-                  Expanded(child: _chip('음력', 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
+                  Expanded(child: _chip(l10n.lunar, 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
                 ]),
                 const SizedBox(height: 20),
-                _label('태어난 시간'),
+                _label(l10n.birthHour),
                 const SizedBox(height: 8),
                 ...[
                   _hours.sublist(0, 6),
@@ -361,7 +365,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                       border: Border.all(color: _birthHourPrecision == 'unknown' ? kGold : kGlassBorder),
                     ),
                     child: Center(
-                      child: Text('모름',
+                      child: Text(l10n.unknown,
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                           color: _birthHourPrecision == 'unknown' ? kGold : kDark)),
                     ),
@@ -380,7 +384,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                   ),
                 ],
                 const SizedBox(height: 28),
-                PrimaryButton(text: '프로필 추가', onPressed: _submit, loading: _loading),
+                PrimaryButton(text: l10n.addProfile, onPressed: _submit, loading: _loading),
                 const SizedBox(height: 32),
               ],
             ),
@@ -412,7 +416,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
     );
   }
 
-  Widget _dateBox() {
+  Widget _dateBox(AppLocalizations l10n) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: BackdropFilter(
@@ -430,8 +434,8 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
               Expanded(
                 child: Text(
                   _birthDate == null
-                      ? '날짜를 선택하세요'
-                      : '${_birthDate!.year}년 ${_birthDate!.month}월 ${_birthDate!.day}일',
+                      ? l10n.selectDate
+                      : '${_birthDate!.year}${l10n.year} ${_birthDate!.month}${l10n.month} ${_birthDate!.day}${l10n.day}',
                   style: TextStyle(
                     fontSize: 15, color: _birthDate == null ? kTextMuted : kDark),
                 ),

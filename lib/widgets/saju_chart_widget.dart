@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import '../l10n/app_localizations.dart';
 
 class SajuChartWidget extends StatelessWidget {
   final Map<String, dynamic> chartData;
@@ -30,6 +31,29 @@ class SajuChartWidget extends StatelessWidget {
   static const _elementKorean = {
     'wood': '목', 'fire': '화', 'earth': '토', 'metal': '금', 'water': '수',
   };
+  static const _elementEnglish = {
+    'wood': 'Wood', 'fire': 'Fire', 'earth': 'Earth', 'metal': 'Metal', 'water': 'Water',
+  };
+  static const _tenGodEnglish = {
+    '비견': 'Bi Jian', '겁재': 'Jie Cai',
+    '식신': 'Shi Shen', '상관': 'Shang Guan',
+    '편재': 'Pian Cai', '정재': 'Zheng Cai',
+    '편관': 'Pian Guan', '정관': 'Zheng Guan',
+    '편인': 'Pian Yin', '정인': 'Zheng Yin',
+  };
+  static const _twelveStarEnglish = {
+    '장생': 'Chang Sheng', '목욕': 'Mu Yu', '관대': 'Guan Dai', '건록': 'Jian Lu',
+    '제왕': 'Di Wang', '쇠': 'Shuai', '병': 'Bing', '사': 'Si',
+    '묘': 'Mu', '절': 'Jue', '태': 'Tai', '양': 'Yang',
+  };
+
+  static String _tenGodLabel(String g, bool isEn) =>
+      (isEn && g.isNotEmpty) ? (_tenGodEnglish[g] ?? g) : g;
+  static String _twelveStarLabel(String s, bool isEn) =>
+      (isEn && s.isNotEmpty) ? (_twelveStarEnglish[s] ?? s) : s;
+
+  static String localizeTenGod(BuildContext context, String g) =>
+      _tenGodLabel(g, AppLocalizations.of(context).locale.languageCode == 'en');
   static const _branchMainStem = {
     '자': '계', '축': '기', '인': '갑', '묘': '을',
     '진': '무', '사': '병', '오': '정', '미': '기',
@@ -111,6 +135,69 @@ class SajuChartWidget extends StatelessWidget {
     '연주': {'title': '연주 (年柱)', 'sub': '태어난 해의 기둥', 'desc': '태어난 해를 나타내는 두 글자예요. 띠가 여기서 나옵니다. 어린 시절 환경이나 집안 분위기, 조상과의 인연을 보여주며 인생 초반의 흐름을 나타냅니다.'},
   };
 
+  // ── English dictionary ──────────────────────────────────
+  static const _meaningsEn = <String, Map<String, String>>{
+    // Heavenly Stems
+    '갑': {'title': '甲 (Jia)', 'sub': 'Wood energy · Strong Yang', 'desc': 'Straight and strong, reaching upward like a great tree. Loves to start new things and lead, with strong pride and independence. Natural leader, but can be stubborn.'},
+    '을': {'title': '乙 (Yi)', 'sub': 'Wood energy · Soft Yin', 'desc': 'Adapts flexibly to the environment like grass or a vine. Bends in the wind but does not break, carrying strong vitality. Refined, artistic, and persistent.'},
+    '병간': {'title': '丙 (Bing)', 'sub': 'Fire energy · Strong Yang', 'desc': 'Bright and hot like the sun. Lively and cheerful, brightening those around. Highly expressive and often popular.'},
+    '정': {'title': '丁 (Ding)', 'sub': 'Fire energy · Soft Yin', 'desc': 'Soft and warm like candlelight. Quiet but with sharp insight and deep sensitivity. Appears calm outside while carrying deep thought and artistry inside.'},
+    '무': {'title': '戊 (Wu)', 'sub': 'Earth energy · Strong Yang', 'desc': 'Solid and steady like a great mountain. Has the tolerance to embrace anything and is dependable. Strong sense of responsibility, sees any task through to the end.'},
+    '기': {'title': '己 (Ji)', 'sub': 'Earth energy · Soft Yin', 'desc': 'Warm like fertile fields that nurture all life. Careful, realistic, and knows how to build substance. Deeply considerate, attentive to those around.'},
+    '경': {'title': '庚 (Geng)', 'sub': 'Metal energy · Strong Yang', 'desc': 'Sharp and strong like hardened metal. Strong sense of justice, values principles, and rarely compromises. Decisive and drives through once resolved.'},
+    '신간': {'title': '辛 (Xin)', 'sub': 'Metal energy · Soft Yin', 'desc': 'Shines like a polished jewel. Excellent aesthetic sense with perfectionist tendencies. Sharp words, keen intuition, and skillful speech.'},
+    '임': {'title': '壬 (Ren)', 'sub': 'Water energy · Strong Yang', 'desc': 'Flows deep and wide like a great river. Quick to grasp situations and multi-talented. Overflowing tolerance and strong ability to improvise.'},
+    '계': {'title': '癸 (Gui)', 'sub': 'Water energy · Soft Yin', 'desc': 'Delicate and permeating like rain or mist. Rich sensitivity and strong intuition. Deep inner world, creative, with a mysterious presence.'},
+    // Earthly Branches
+    '자': {'title': '子 (Zi)', 'sub': '🐭 Rat · Water energy · Deep winter', 'desc': 'Calm on the surface but holding abundant energy within. Bright, witty, and loves to explore. Those born between 11pm–1am strongly carry this energy.'},
+    '축': {'title': '丑 (Chou)', 'sub': '🐮 Ox · Earth energy · End of winter', 'desc': 'A diligent energy that quietly walks its own path. Not fast, but steadily builds up. Persistent, realistic, and rarely gives up once committed.'},
+    '인': {'title': '寅 (Yin)', 'sub': '🐯 Tiger · Wood energy · Early spring', 'desc': 'Brave and active energy like a tiger. Full of drive for new beginnings with strong charisma. Natural leadership and a love of challenge.'},
+    '묘지': {'title': '卯 (Mao)', 'sub': '🐰 Rabbit · Wood energy · Peak spring', 'desc': 'Soft, vibrant energy like flowers in full bloom. Flexible, socially gifted, and gets along well with people. Good artistic sense.'},
+    '진': {'title': '辰 (Chen)', 'sub': '🐲 Dragon · Earth energy · Late spring', 'desc': 'Mysterious and dynamic energy. Big dreams, creative, with a unique personality. Charming and enjoys change.'},
+    '사지': {'title': '巳 (Si)', 'sub': '🐍 Snake · Fire energy · Early summer', 'desc': 'Careful and wise energy like a snake. Examines situations closely with cool judgment. Patient, with a talent for accumulating wealth.'},
+    '오': {'title': '午 (Wu)', 'sub': '🐴 Horse · Fire energy · Peak summer', 'desc': 'Free and passionate energy like a horse. Bright, active, and highly expressive. Loves freedom and has a direct nature.'},
+    '미': {'title': '未 (Wei)', 'sub': '🐑 Sheep · Earth energy · Late summer', 'desc': 'Gentle and abundant energy. Rich sensitivity and deep consideration. Values relationships and has artistic sense.'},
+    '신지': {'title': '申 (Shen)', 'sub': '🐵 Monkey · Metal energy · Early autumn', 'desc': 'Quick-witted and clever energy like a monkey. Reads situations fast with interest in many fields. Active and highly adaptable.'},
+    '유': {'title': '酉 (You)', 'sub': '🐔 Rooster · Metal energy · Peak autumn', 'desc': 'Sharp energy that pursues refinement. Outstanding aesthetic sense, detailed, with perfectionist tendencies. Analytical and realistic.'},
+    '술': {'title': '戌 (Xu)', 'sub': '🐶 Dog · Earth energy · Late autumn', 'desc': 'Loyal and dependable energy like a dog. Deep loyalty—once trust is given, it is kept to the end. Strong responsibility and devotion.'},
+    '해': {'title': '亥 (Hai)', 'sub': '🐷 Pig · Water energy · Early winter', 'desc': 'Easygoing energy filled with good fortune. Honest, optimistic, and well-liked. Warm humanity and lucky with people.'},
+    // Ten Gods
+    '비견': {'title': 'Bi Jian (比肩)', 'sub': 'Energy of the same nature as me', 'desc': 'Same element and polarity as the Day Master. Strong independence and pride, inclined to do things your own way. Competitive, yet strongly self-reliant.'},
+    '겁재': {'title': 'Jie Cai (劫財)', 'sub': 'Similar to me but opposite in polarity', 'desc': 'Same element but opposite polarity. Strong action and competitiveness with quick decisions. Can be impulsive, but pushes through hardship with a strong will.'},
+    '식신': {'title': 'Shi Shen (食神)', 'sub': 'Energy I nourish · fortune of living', 'desc': 'Energy I invest in and grow. Excellent expression and creativity; knows how to enjoy life with ease. A favorable energy tied to livelihood and artistic talent.'},
+    '상관': {'title': 'Shang Guan (傷官)', 'sub': 'Energy I nourish · talent', 'desc': 'Like Shi Shen—energy I raise—but stronger and more free-spirited. Great talent and eloquence, highly creative. Dislikes being boxed in and may rebel against rules or authority.'},
+    '편재': {'title': 'Pian Cai (偏財)', 'sub': 'Energy I control · active wealth', 'desc': 'A relationship where I govern the other. Energy that actively earns and spends money. Business sense, enjoys investing, wide social circle and generous spending.'},
+    '정재': {'title': 'Zheng Cai (正財)', 'sub': 'Energy I control · stable wealth', 'desc': 'Like Pian Cai but more stable. Represents steady income and diligent management of wealth. Good at saving, realistic, with a strong sense of responsibility.'},
+    '편관': {'title': 'Pian Guan (偏官)', 'sub': 'Energy pressing me · challenge and growth', 'desc': 'The other strongly exerts pressure on me. Can mean stress, but an energy that grows stronger when overcome. Builds willpower and drive—a good fit for upright professions like military or police.'},
+    '정관': {'title': 'Zheng Guan (正官)', 'sub': 'Energy guiding me · honor and order', 'desc': 'The other gently guides me. Values rules and morality; cherishes social recognition. Dignified and trustworthy.'},
+    '편인': {'title': 'Pian Yin (偏印)', 'sub': 'Energy raising me · intuition and individuality', 'desc': 'Supports me in an unconventional way. Strong intuition and original ideas. Interested in mystical or artistic fields; can occasionally be moody.'},
+    '정인': {'title': 'Zheng Yin (正印)', 'sub': 'Energy raising me · knowledge and protection', 'desc': 'The other raises me calmly and stably. Loves learning, of fine character, trusted by those around. A warm, motherly energy.'},
+    // 12 Stages
+    '장생': {'title': 'Chang Sheng (長生)', 'sub': 'Stage 1 · Birth', 'desc': 'Energy of a new beginning, like a newborn entering the world. Pure, bright, and full of possibility. A lively and hopeful energy.'},
+    '목욕': {'title': 'Mu Yu (沐浴)', 'sub': 'Stage 2 · Sensitivity and freedom', 'desc': 'The stage of bathing a newborn. Rich sensitivity with sensitive emotions. Interested in the opposite sex with a free-spirited nature. Great artistic sense.'},
+    '관대': {'title': 'Guan Dai (冠帶)', 'sub': 'Stage 3 · Growth and preparation', 'desc': 'A young adult preparing to step into society. A time of diligent learning and skill-building. Ambitious with a strong drive to achieve.'},
+    '건록': {'title': 'Jian Lu (建祿)', 'sub': 'Stage 4 · Independence and activity', 'desc': 'Stepping out and working in earnest. Strong self-reliance and fine ability. Builds success through personal effort.'},
+    '제왕': {'title': 'Di Wang (帝旺)', 'sub': 'Stage 5 · Prime', 'desc': 'Peak of power and capability. Overflowing energy to accomplish anything. Strong leadership and vigor.'},
+    '쇠': {'title': 'Shuai (衰)', 'sub': 'Stage 6 · After the prime', 'desc': 'Gradually easing down after the peak. Youthful vigor fades but wisdom from experience grows. Leads others with maturity.'},
+    '병운': {'title': 'Bing (病)', 'sub': 'Stage 7 · Energy weakening', 'desc': 'Energy gradually drops. Delicate, with deep sensitivity. Health becomes important; strong affinity with medicine or art.'},
+    '사운': {'title': 'Si (死)', 'sub': 'Stage 8 · Energy exhausted', 'desc': 'Energy turns inward rather than outward. Deep insight and spiritual richness. Shines in philosophy or research.'},
+    '묘운': {'title': 'Mu (墓)', 'sub': 'Stage 9 · Storage and accumulation', 'desc': 'Like seeds buried in the ground, storing energy. Not flashy, but building quietly within. Excellent at accumulating wealth.'},
+    '절': {'title': 'Jue (絶)', 'sub': 'Stage 10 · Complete transition', 'desc': 'A turning point of full severance and new beginnings. Frequent movement or change with new encounters. A mysterious energy that does not fear change.'},
+    '태': {'title': 'Tai (胎)', 'sub': 'Stage 11 · Conception', 'desc': 'Like new life conceived in the womb. Not yet shown to the world, but holding limitless possibility. Rich imagination.'},
+    '양': {'title': 'Yang (養)', 'sub': 'Stage 12 · Nurturing and preparation', 'desc': 'Cared for while preparing to be born. Warmly raised, growing energy. Rich sensitivity and artistic touch.'},
+    // Row/column labels
+    '천간': {'title': 'Heavenly Stems (天干)', 'sub': 'Top row of Saju chart · 10 characters', 'desc': 'Made of 10 characters: 甲乙丙丁戊己庚辛壬癸. They split the five energies (Wood, Fire, Earth, Metal, Water) into strong and soft versions. The upper characters of the Saju chart are Stems, showing your outward personality and talents.'},
+    '천간십성': {'title': 'Stem Ten Gods (天干 十星)', 'sub': 'Labels of your relationship to each Stem', 'desc': 'Based on the Day Master (you), each other Stem is labeled by how it relates to you. Same nature = Bi Jian; energy you nurture = Shi Shen; energy pressing you = Pian Guan, and so on. Each relationship maps to life areas like wealth, career, or relationships.'},
+    '지지': {'title': 'Earthly Branches (地支)', 'sub': 'Bottom row of Saju chart · 12 characters', 'desc': 'Made of 12 characters: 子丑寅卯辰巳午未申酉戌亥. These give rise to the 12 months, 12 directions, and 12 zodiac animals. The lower characters of the Saju chart are Branches, showing your environment and the flow of fortune.'},
+    '지지십성': {'title': 'Branch Ten Gods (地支 十星)', 'sub': 'Relationships via hidden main stem', 'desc': 'Each Branch conceals a representative Stem. The relationship between that hidden Stem and the Day Master is the Branch Ten God. It shows how earthly energy actually influences your life.'},
+    '지장간': {'title': 'Hidden Stems (支藏干)', 'sub': 'Stems concealed within each Branch', 'desc': 'Each Branch actually contains several Stems stacked inside, like layers of an onion. As luck moves, these hidden Stems activate one by one, creating finer changes in life.'},
+    '12운성': {'title': 'Twelve Fortune Stages (十二運星)', 'sub': '12 steps showing the strength of your energy', 'desc': 'Cycles through Chang Sheng (birth) → Mu Yu → Guan Dai → Jian Lu → Di Wang (prime) → Shuai → Bing → Si → Mu → Jue → Tai → Yang. Just as a person is born, grows, and ages, your energy corresponds to one of these 12 stages at each Branch.'},
+    '시주': {'title': 'Hour Pillar (時柱)', 'sub': 'Pillar of the birth hour', 'desc': 'Two characters representing the hour of birth. A day is divided into twelve two-hour segments. Mainly shows fortune regarding children, later years, and the people around you.'},
+    '일주': {'title': 'Day Pillar (日柱)', 'sub': 'Pillar of the birth day · yourself', 'desc': 'The most important pillar in Saju. The upper character (Stem) represents "you," and all relationships and personality are read from here. Your innate nature, temperament, and marital bond are seen here.'},
+    '월주': {'title': 'Month Pillar (月柱)', 'sub': 'Pillar of the birth month', 'desc': 'Two characters representing the birth month. Among the four pillars, it tends to exert the strongest influence. Shows parents and siblings, career, and social life—mainly the flow of life from your 20s to 40s.'},
+    '연주': {'title': 'Year Pillar (年柱)', 'sub': 'Pillar of the birth year', 'desc': 'Two characters representing the birth year. Your zodiac animal comes from here. Shows childhood environment, family atmosphere, ancestral connections, and the flow of early life.'},
+  };
+
   // ── 뜻 키 헬퍼 ───────────────────────────────────────────
   static String _stemKey(String c) {
     if (c == '신') return '신간';
@@ -164,7 +251,8 @@ class SajuChartWidget extends StatelessWidget {
 
   // ── 뜻 바텀시트 ───────────────────────────────────────────
   static void _showMeaning(BuildContext context, String key) {
-    final info = _meanings[key];
+    final isEn = AppLocalizations.of(context).locale.languageCode == 'en';
+    final info = (isEn ? _meaningsEn[key] : _meanings[key]) ?? _meanings[key];
     if (info == null || key.isEmpty) return;
     showModalBottomSheet(
       context: context,
@@ -218,12 +306,18 @@ class SajuChartWidget extends StatelessWidget {
     final day   = chartData['dayPillar']   as Map<String, dynamic>?;
     final hour  = chartData['hourPillar']  as Map<String, dynamic>?;
 
+    final l10n = AppLocalizations.of(context);
+    final isEn = l10n.locale.languageCode == 'en';
+
     if (year == null && month == null && day == null) {
-      return const Center(child: Text('차트 데이터 없음', style: TextStyle(color: kTextMuted)));
+      return Center(child: Text(l10n.noChartData, style: const TextStyle(color: kTextMuted)));
     }
 
     final pillars = [hour, day, month, year];
-    final labels  = ['시주', '일주', '월주', '연주'];
+    final labelKeys = ['시주', '일주', '월주', '연주'];
+    final labels = isEn
+        ? const ['Hour', 'Day', 'Month', 'Year']
+        : labelKeys;
     final dayMaster = _stemChar(day);
     const lw = 38.0;
 
@@ -283,7 +377,7 @@ class SajuChartWidget extends StatelessWidget {
             SizedBox(width: lw),
             ...List.generate(4, (i) => Expanded(
               child: GestureDetector(
-                onTap: () => _showMeaning(context, labels[i]),
+                onTap: () => _showMeaning(context, labelKeys[i]),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Center(
@@ -298,12 +392,12 @@ class SajuChartWidget extends StatelessWidget {
 
           // 천간
           Row(children: [
-            rowLabel('천간'),
+            rowLabel(isEn ? 'Stem' : '천간', key: '천간'),
             ...List.generate(4, (i) {
               final stem = _stemChar(pillars[i]);
               return Expanded(child: GestureDetector(
                 onTap: stem.isNotEmpty ? () => _showMeaning(context, _stemKey(stem)) : null,
-                child: _pillarCell(stem, _stemElement[stem], isStem: true),
+                child: _pillarCell(stem, _stemElement[stem], isStem: true, isEn: isEn),
               ));
             }),
           ]),
@@ -311,23 +405,23 @@ class SajuChartWidget extends StatelessWidget {
 
           // 천간 십성
           Row(children: [
-            rowLabel('천간\n십성', key: '천간십성'),
+            rowLabel(isEn ? 'Stem\nGod' : '천간\n십성', key: '천간십성'),
             ...List.generate(4, (i) {
               final stem = _stemChar(pillars[i]);
               final god = dayMaster.isNotEmpty && stem.isNotEmpty ? _tenGod(dayMaster, stem) : '';
-              return textCell(god);
+              return textCell(_tenGodLabel(god, isEn), key: god);
             }),
           ]),
           const SizedBox(height: 4),
 
           // 지지
           Row(children: [
-            rowLabel('지지'),
+            rowLabel(isEn ? 'Branch' : '지지', key: '지지'),
             ...List.generate(4, (i) {
               final branch = _branchChar(pillars[i]);
               return Expanded(child: GestureDetector(
                 onTap: branch.isNotEmpty ? () => _showMeaning(context, _branchKey(branch)) : null,
-                child: _pillarCell(branch, _branchElement[branch], isStem: false),
+                child: _pillarCell(branch, _branchElement[branch], isStem: false, isEn: isEn),
               ));
             }),
           ]),
@@ -335,19 +429,19 @@ class SajuChartWidget extends StatelessWidget {
 
           // 지지 십성
           Row(children: [
-            rowLabel('지지\n십성', key: '지지십성'),
+            rowLabel(isEn ? 'Branch\nGod' : '지지\n십성', key: '지지십성'),
             ...List.generate(4, (i) {
               final branch = _branchChar(pillars[i]);
               final main = _branchMainStem[branch] ?? '';
               final god = dayMaster.isNotEmpty && main.isNotEmpty ? _tenGod(dayMaster, main) : '';
-              return textCell(god);
+              return textCell(_tenGodLabel(god, isEn), key: god);
             }),
           ]),
           const SizedBox(height: 4),
 
           // 지장간
           Row(children: [
-            rowLabel('지장간'),
+            rowLabel(isEn ? 'Hidden\nStem' : '지장간', key: '지장간'),
             ...List.generate(4, (i) {
               final hidden = _hiddenStems(pillars[i]);
               return Expanded(
@@ -382,13 +476,13 @@ class SajuChartWidget extends StatelessWidget {
 
           // 12운성
           Row(children: [
-            rowLabel('12\n운성', key: '12운성'),
+            rowLabel(isEn ? '12\nStages' : '12\n운성', key: '12운성'),
             ...List.generate(4, (i) {
               final branch = _branchChar(pillars[i]);
               final star = (dayMaster.isNotEmpty && branch.isNotEmpty)
                   ? (_twelveStars[dayMaster]?[branch] ?? '')
                   : '';
-              return textCell(star, key: _starKey(star));
+              return textCell(_twelveStarLabel(star, isEn), key: _starKey(star));
             }),
           ]),
         ],
@@ -416,10 +510,12 @@ class SajuChartWidget extends StatelessWidget {
         .toList();
   }
 
-  Widget _pillarCell(String text, String? element, {required bool isStem}) {
+  Widget _pillarCell(String text, String? element, {required bool isStem, bool isEn = false}) {
     final color = _elementColor(element);
     final hanja = isStem ? _stemHanja[text] : _branchHanja[text];
-    final elementName = element != null ? _elementKorean[element] : null;
+    final elementName = element == null
+        ? null
+        : (isEn ? _elementEnglish[element] : _elementKorean[element]);
     const shadows = [Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1))];
 
     return Container(

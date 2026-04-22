@@ -47,6 +47,27 @@ class AuthProvider extends ChangeNotifier {
     await Supabase.instance.client.auth.signOut();
   }
 
+  Future<void> updatePassword(String newPassword) async {
+    await Supabase.instance.client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
+
+  Future<void> updateEmail(String newEmail) async {
+    await Supabase.instance.client.auth.updateUser(
+      UserAttributes(email: newEmail),
+    );
+  }
+
+  Future<void> verifyPassword(String password) async {
+    final em = email;
+    if (em.isEmpty) throw Exception('no email');
+    await Supabase.instance.client.auth.signInWithPassword(
+      email: em,
+      password: password,
+    );
+  }
+
   String get displayName {
     if (_user == null) return '';
     return _user!.userMetadata?['full_name'] as String? ??

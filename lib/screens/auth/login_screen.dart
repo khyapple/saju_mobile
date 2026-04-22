@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/cosmic_background.dart';
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
+    final l10n = AppLocalizations.of(context);
     setState(() { _loading = true; _error = null; });
     try {
       await context.read<AuthProvider>().signInWithEmail(
@@ -55,25 +57,27 @@ class _LoginScreenState extends State<LoginScreen>
       if (mounted) context.go('/profiles');
     } on AuthException catch (e) {
       final msg = (e.message.contains('Invalid login credentials') || e.message.contains('invalid_credentials'))
-          ? '이메일 또는 비밀번호를 확인해주세요.'
+          ? l10n.loginFailed
           : e.message;
       setState(() => _error = msg);
     } catch (_) {
-      setState(() => _error = '이메일 또는 비밀번호를 확인해주세요.');
+      setState(() => _error = l10n.loginFailed);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _handleSocialLogin(OAuthProvider provider) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await Supabase.instance.client.auth.signInWithOAuth(provider);
     } catch (_) {
-      if (mounted) setState(() => _error = '소셜 로그인에 실패했습니다.');
+      if (mounted) setState(() => _error = l10n.socialLoginFailed);
     }
   }
 
   Future<void> _forgotPassword() async {
+    final l10n = AppLocalizations.of(context);
     final emailInput = _emailCtrl.text.trim();
     final ctrl = TextEditingController(text: emailInput);
 
@@ -82,14 +86,14 @@ class _LoginScreenState extends State<LoginScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: kCosmicNavy.withOpacity(0.95),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('비밀번호 찾기',
-          style: TextStyle(color: kDark, fontSize: 18, fontWeight: FontWeight.w600)),
+        title: Text(l10n.forgotPassword,
+          style: const TextStyle(color: kDark, fontSize: 18, fontWeight: FontWeight.w600)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('가입한 이메일로 재설정 링크를 보내드립니다.',
-              style: TextStyle(color: kTextMuted, fontSize: 13)),
+            Text(l10n.forgotPasswordDesc,
+              style: const TextStyle(color: kTextMuted, fontSize: 13)),
             const SizedBox(height: 16),
             TextField(
               controller: ctrl,
@@ -102,11 +106,11 @@ class _LoginScreenState extends State<LoginScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('취소', style: TextStyle(color: kTextMuted)),
+            child: Text(l10n.cancel, style: const TextStyle(color: kTextMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('전송', style: TextStyle(color: kGold, fontWeight: FontWeight.w600)),
+            child: Text(l10n.send, style: const TextStyle(color: kGold, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -120,13 +124,13 @@ class _LoginScreenState extends State<LoginScreen>
       await Supabase.instance.client.auth.resetPasswordForEmail(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('비밀번호 재설정 이메일을 보냈습니다. 스팸함도 확인해주세요.')),
+          SnackBar(content: Text(l10n.resetEmailSent)),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이메일 전송에 실패했습니다.')),
+          SnackBar(content: Text(l10n.resetEmailFailed)),
         );
       }
     }
@@ -134,6 +138,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: CosmicBackground(
         child: SafeArea(
@@ -197,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen>
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const Text('AI 사주 분석',
-                          style: TextStyle(fontSize: 12, color: kTextMuted, letterSpacing: 2)),
+                        Text(l10n.aiSajuAnalysis,
+                          style: const TextStyle(fontSize: 12, color: kTextMuted, letterSpacing: 2)),
                       ],
                     ),
                   ),
@@ -212,12 +217,12 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('로그인',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kDark)),
+                        Text(l10n.login,
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kDark)),
                         const SizedBox(height: 20),
 
                         // 이메일
-                        _field(controller: _emailCtrl, label: '이메일', hint: 'example@email.com',
+                        _field(controller: _emailCtrl, label: l10n.email, hint: 'example@email.com',
                           keyboardType: TextInputType.emailAddress),
                         const SizedBox(height: 16),
 
@@ -225,8 +230,8 @@ class _LoginScreenState extends State<LoginScreen>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('비밀번호',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+                            Text(l10n.password,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
                             const SizedBox(height: 6),
                             TextField(
                               controller: _passwordCtrl,
@@ -251,8 +256,8 @@ class _LoginScreenState extends State<LoginScreen>
                           child: TextButton(
                             onPressed: _forgotPassword,
                             style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 4)),
-                            child: const Text('비밀번호 찾기',
-                              style: TextStyle(fontSize: 12, color: kTextMuted)),
+                            child: Text(l10n.forgotPassword,
+                              style: const TextStyle(fontSize: 12, color: kTextMuted)),
                           ),
                         ),
 
@@ -278,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ],
                         const SizedBox(height: 20),
 
-                        PrimaryButton(text: '로그인', onPressed: _login, loading: _loading),
+                        PrimaryButton(text: l10n.login, onPressed: _login, loading: _loading),
                       ],
                     ),
                   ),
@@ -290,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen>
                       Expanded(child: Container(height: 0.5, color: kGlassBorder)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('또는', style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.4))),
+                        child: Text(l10n.orContinueWith, style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.4))),
                       ),
                       Expanded(child: Container(height: 0.5, color: kGlassBorder)),
                     ],
@@ -299,19 +304,19 @@ class _LoginScreenState extends State<LoginScreen>
 
                   // 소셜 로그인 - 글래스 스타일
                   _socialBtn(
-                    label: 'Google로 계속하기',
+                    label: l10n.continueWithGoogle,
                     icon: const Text('G', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
                     onTap: () => _handleSocialLogin(OAuthProvider.google),
                   ),
                   const SizedBox(height: 10),
                   _socialBtn(
-                    label: 'Apple로 계속하기',
+                    label: l10n.continueWithApple,
                     icon: const Text('', style: TextStyle(fontSize: 16, color: Colors.white)),
                     onTap: () => _handleSocialLogin(OAuthProvider.apple),
                   ),
                   const SizedBox(height: 10),
                   _socialBtn(
-                    label: 'Facebook으로 계속하기',
+                    label: l10n.continueWithFacebook,
                     icon: const Text('f', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1877F2))),
                     onTap: () => _handleSocialLogin(OAuthProvider.facebook),
                   ),
@@ -320,12 +325,12 @@ class _LoginScreenState extends State<LoginScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('계정이 없으신가요?  ',
+                      Text('${l10n.noAccount}  ',
                         style: TextStyle(color: kDark.withOpacity(0.5), fontSize: 14)),
                       GestureDetector(
                         onTap: () => context.go('/signup'),
-                        child: const Text('회원가입',
-                          style: TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w600)),
+                        child: Text(l10n.signup,
+                          style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),

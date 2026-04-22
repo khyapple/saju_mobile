@@ -77,9 +77,22 @@ class _AnimatedStarFieldState extends State<AnimatedStarField>
     )..repeat();
 
     // 별의 위치/주기/위상을 미리 생성 (매 프레임 재계산 방지)
-    final rng = Random(42);
+    final rng = Random();
     _stars = List.generate(widget.starCount, (_) => _StarSpec.random(rng));
-    _glowStars = List.generate(widget.glowStarCount, (_) => _StarSpec.glow(rng));
+
+    // 글로우 별 — 격자 기반 stratified 배치로 고르게 분산
+    final cols = (sqrt(widget.glowStarCount.toDouble())).ceil();
+    final rows = (widget.glowStarCount / cols).ceil();
+    _glowStars = [];
+    for (int r = 0; r < rows && _glowStars.length < widget.glowStarCount; r++) {
+      for (int c = 0; c < cols && _glowStars.length < widget.glowStarCount; c++) {
+        _glowStars.add(_StarSpec.glowCell(
+          rng,
+          c / cols, (c + 1) / cols,
+          r / rows, (r + 1) / rows,
+        ));
+      }
+    }
   }
 
   @override
@@ -146,17 +159,21 @@ class _StarSpec {
     );
   }
 
-  factory _StarSpec.glow(Random rng) {
+  factory _StarSpec.glowCell(
+    Random rng,
+    double xMin, double xMax,
+    double yMin, double yMax,
+  ) {
     return _StarSpec(
-      xRatio: rng.nextDouble(),
-      yRatio: rng.nextDouble(),
+      xRatio: xMin + rng.nextDouble() * (xMax - xMin),
+      yRatio: yMin + rng.nextDouble() * (yMax - yMin),
       baseRadius: rng.nextDouble() * 1.0 + 1.2,
-      speed: rng.nextDouble() * 0.15 + 0.05, // 천천히 (6~20초)
+      speed: rng.nextDouble() * 0.15 + 0.05,
       phase: rng.nextDouble(),
       phase2: rng.nextDouble(),
       speed2: rng.nextDouble() * 0.2 + 0.1,
-      minOpacity: 0.3,
-      maxOpacity: 0.85,
+      minOpacity: 0.10,
+      maxOpacity: 0.35,
     );
   }
 }
@@ -186,37 +203,44 @@ class _AnimatedStarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
 
-    // 작은 별들
+    // 작은 별들 — 중심 밝고 가장자리로 자연스럽게 페이드
     for (final s in stars) {
       final t = _twinkle(s);
       final opacity = s.minOpacity + (s.maxOpacity - s.minOpacity) * t;
-      final radius = s.baseRadius * (0.85 + t * 0.3);
+      final radius = s.baseRadius * (0.85 + t * 0.15);
+      final center = Offset(s.xRatio * size.width, s.yRatio * size.height);
+      final haloRadius = radius * 3.0;
 
-      paint.color = Colors.white.withOpacity(opacity);
-      canvas.drawCircle(
-        Offset(s.xRatio * size.width, s.yRatio * size.height),
-        radius,
-        paint,
-      );
+      paint.shader = RadialGradient(
+        colors: [
+          Colors.white.withOpacity(opacity),
+          Colors.white.withOpacity(opacity * 0.25),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.35, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: haloRadius));
+      canvas.drawCircle(center, haloRadius, paint);
+      paint.shader = null;
     }
 
-    // 큰 글로우 별
+    // 큰 글로우 별 — 단일 라디얼 그라디언트로 자연스럽게 페이드
     for (final s in glowStars) {
       final t = _twinkle(s);
       final center = Offset(s.xRatio * size.width, s.yRatio * size.height);
-      final glowRadius = s.baseRadius * (5 + t * 4);
+      final coreOpacity = s.minOpacity + (s.maxOpacity - s.minOpacity) * t;
+      final glowRadius = s.baseRadius * 12.0;
 
-      // 외곽 골드 글로우
-      paint.color = kGold.withOpacity(0.04 + t * 0.06);
+      paint.shader = RadialGradient(
+        colors: [
+          Colors.white.withOpacity(coreOpacity),
+          kGold.withOpacity(coreOpacity * 0.30),
+          kCosmicViolet.withOpacity(coreOpacity * 0.10),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.15, 0.45, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
       canvas.drawCircle(center, glowRadius, paint);
-
-      // 중간 보라 글로우
-      paint.color = kCosmicViolet.withOpacity(0.05 + t * 0.05);
-      canvas.drawCircle(center, glowRadius * 0.5, paint);
-
-      // 별 중심
-      paint.color = Colors.white.withOpacity(s.minOpacity + (s.maxOpacity - s.minOpacity) * t);
-      canvas.drawCircle(center, s.baseRadius, paint);
+      paint.shader = null;
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
@@ -56,30 +57,31 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  String get _strengthLabel {
+  String _strengthLabel(AppLocalizations l10n) {
     switch (_passwordStrength) {
-      case 1: return '약함';
-      case 2: return '보통';
-      case 3: return '강함';
-      default: return '매우 강함';
+      case 1: return l10n.passwordWeak;
+      case 2: return l10n.passwordFair;
+      case 3: return l10n.passwordStrong;
+      default: return l10n.passwordVeryStrong;
     }
   }
 
   Future<void> _signup() async {
+    final l10n = AppLocalizations.of(context);
     if (!_agreeTerms) {
-      setState(() => _error = '서비스 이용약관에 동의해주세요.');
+      setState(() => _error = l10n.termsRequired);
       return;
     }
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = '이름을 입력해주세요.');
+      setState(() => _error = l10n.nameRequired);
       return;
     }
     if (_passwordCtrl.text.length < 8) {
-      setState(() => _error = '비밀번호는 8자 이상이어야 합니다.');
+      setState(() => _error = l10n.passwordTooShort);
       return;
     }
     if (_passwordCtrl.text != _confirmCtrl.text) {
-      setState(() => _error = '비밀번호가 일치하지 않습니다.');
+      setState(() => _error = l10n.passwordMismatch);
       return;
     }
 
@@ -107,25 +109,26 @@ class _SignupScreenState extends State<SignupScreen> {
     } on AuthException catch (e) {
       final String msg;
       if (e.message.contains('already registered') || e.message.contains('User already registered')) {
-        msg = '이미 가입된 이메일입니다.';
+        msg = l10n.emailAlreadyUsed;
       } else if (e.message.contains('rate limit') || e.message.contains('email rate')) {
-        msg = '이메일 발송 한도를 초과했습니다. Supabase 대시보드에서 이메일 인증을 비활성화하거나 잠시 후 다시 시도해주세요.';
+        msg = l10n.emailRateLimit;
       } else {
-        msg = '회원가입에 실패했습니다. 다시 시도해주세요.';
+        msg = l10n.signupFailed;
       }
       setState(() => _error = msg);
     } catch (_) {
-      setState(() => _error = '회원가입에 실패했습니다. 다시 시도해주세요.');
+      setState(() => _error = l10n.signupFailed);
     } finally {
       if (mounted && !_signupSuccess) setState(() => _loading = false);
     }
   }
 
   Future<void> _handleSocialLogin(OAuthProvider provider) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await Supabase.instance.client.auth.signInWithOAuth(provider);
     } catch (_) {
-      if (mounted) setState(() => _error = '소셜 로그인에 실패했습니다.');
+      if (mounted) setState(() => _error = l10n.socialLoginFailed);
     }
   }
 
@@ -137,6 +140,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // 이메일 인증 안내 화면 (웹과 동일)
   Widget _emailConfirmScreen() {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -163,15 +167,15 @@ class _SignupScreenState extends State<SignupScreen> {
                     borderRadius: 20,
                     child: Column(
                       children: [
-                        const Text(
-                          '이메일을 확인해주세요',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: kDark),
+                        Text(
+                          l10n.checkYourEmail,
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: kDark),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          '확인 링크를 보냈습니다',
-                          style: TextStyle(fontSize: 13, color: kTextMuted),
+                        Text(
+                          l10n.confirmLinkSent,
+                          style: const TextStyle(fontSize: 13, color: kTextMuted),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 4),
@@ -183,15 +187,15 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 16),
                         Container(width: 60, height: 0.5, color: kGold.withOpacity(0.25)),
                         const SizedBox(height: 16),
-                        const Text(
-                          '이메일의 확인 링크를 클릭해\n가입을 완료해주세요.',
-                          style: TextStyle(fontSize: 12, color: kTextMuted, height: 1.6),
+                        Text(
+                          l10n.confirmLinkDesc,
+                          style: const TextStyle(fontSize: 12, color: kTextMuted, height: 1.6),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          '이메일이 보이지 않으면 스팸함을 확인해주세요.',
-                          style: TextStyle(fontSize: 11, color: kTextMuted),
+                        Text(
+                          l10n.checkSpam,
+                          style: const TextStyle(fontSize: 11, color: kTextMuted),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -201,12 +205,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('이미 확인하셨나요?  ', style: TextStyle(fontSize: 12, color: kTextMuted)),
+                      Text('${l10n.alreadyConfirmed}  ', style: const TextStyle(fontSize: 12, color: kTextMuted)),
                       GestureDetector(
                         onTap: () => context.go('/login'),
-                        child: const Text(
-                          '로그인',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kGold),
+                        child: Text(
+                          l10n.login,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kGold),
                         ),
                       ),
                     ],
@@ -221,6 +225,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _formScreen() {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -240,11 +245,11 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('회원가입',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: kDark)),
+                Text(l10n.signup,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: kDark)),
                 const SizedBox(height: 6),
-                const Text('AI 사주 분석을 시작해보세요',
-                  style: TextStyle(fontSize: 14, color: kTextMuted)),
+                Text(l10n.startAiAnalysis,
+                  style: const TextStyle(fontSize: 14, color: kTextMuted)),
                 const SizedBox(height: 28),
 
                 GlassCard(
@@ -252,18 +257,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _field(controller: _nameCtrl, label: '이름', hint: '홍길동'),
+                      _field(controller: _nameCtrl, label: l10n.name, hint: l10n.nameHint),
                       const SizedBox(height: 16),
                       _field(
                         controller: _emailCtrl,
-                        label: '이메일',
+                        label: l10n.email,
                         hint: 'example@email.com',
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
 
                       // 비밀번호 + 강도 바
-                      _labelText('비밀번호'),
+                      _labelText(l10n.password),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _passwordCtrl,
@@ -271,7 +276,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         onChanged: (_) => setState(() {}),
                         style: const TextStyle(fontSize: 15, color: kDark),
                         decoration: _inputDeco(
-                          hint: '최소 8자 이상',
+                          hint: l10n.passwordMinLength,
                           suffix: _eyeIcon(_obscurePass, () => setState(() => _obscurePass = !_obscurePass)),
                         ),
                       ),
@@ -291,7 +296,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             )),
                             if (_passwordStrength > 0) ...[
                               const SizedBox(width: 8),
-                              Text(_strengthLabel, style: TextStyle(fontSize: 11, color: _strengthColor)),
+                              Text(_strengthLabel(l10n), style: TextStyle(fontSize: 11, color: _strengthColor)),
                             ],
                           ],
                         ),
@@ -299,7 +304,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 16),
 
                       // 비밀번호 확인
-                      _labelText('비밀번호 확인'),
+                      _labelText(l10n.passwordConfirm),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _confirmCtrl,
@@ -307,14 +312,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         onChanged: (_) => setState(() {}),
                         style: const TextStyle(fontSize: 15, color: kDark),
                         decoration: _inputDeco(
-                          hint: '비밀번호를 다시 입력하세요',
+                          hint: l10n.passwordConfirmHint,
                           suffix: _eyeIcon(_obscureConfirm, () => setState(() => _obscureConfirm = !_obscureConfirm)),
                         ),
                       ),
                       if (_confirmCtrl.text.isNotEmpty && _confirmCtrl.text != _passwordCtrl.text) ...[
                         const SizedBox(height: 4),
-                        const Text('비밀번호가 일치하지 않습니다',
-                          style: TextStyle(fontSize: 10, color: kErrorColor)),
+                        Text(l10n.passwordMismatch,
+                          style: const TextStyle(fontSize: 10, color: kErrorColor)),
                       ],
                     ],
                   ),
@@ -339,10 +344,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             : null,
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          '서비스 이용약관 및 개인정보 처리방침에 동의합니다',
-                          style: TextStyle(fontSize: 13, color: kTextMuted),
+                          l10n.agreeToTerms,
+                          style: const TextStyle(fontSize: 13, color: kTextMuted),
                         ),
                       ),
                     ],
@@ -372,7 +377,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 28),
 
                 PrimaryButton(
-                  text: '회원가입',
+                  text: l10n.signup,
                   onPressed: _agreeTerms ? _signup : null,
                   loading: _loading,
                 ),
@@ -382,9 +387,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 Row(
                   children: [
                     Expanded(child: Container(height: 0.5, color: kGlassBorder)),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('또는', style: TextStyle(fontSize: 11, color: kTextMuted)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(l10n.orContinueWith, style: const TextStyle(fontSize: 11, color: kTextMuted)),
                     ),
                     Expanded(child: Container(height: 0.5, color: kGlassBorder)),
                   ],
@@ -393,20 +398,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 // 소셜 로그인 — glass-styled
                 _socialBtn(
-                  label: 'Google로 계속하기',
+                  label: l10n.continueWithGoogle,
                   icon: const Text('G', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
                   onTap: () => _handleSocialLogin(OAuthProvider.google),
                 ),
                 const SizedBox(height: 10),
                 _socialBtn(
-                  label: 'Apple로 계속하기',
+                  label: l10n.continueWithApple,
                   icon: const Text('', style: TextStyle(fontSize: 16, color: Colors.white)),
                   bgOverride: Colors.black.withOpacity(0.6),
                   onTap: () => _handleSocialLogin(OAuthProvider.apple),
                 ),
                 const SizedBox(height: 10),
                 _socialBtn(
-                  label: 'Facebook으로 계속하기',
+                  label: l10n.continueWithFacebook,
                   icon: const Text('f', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
                   bgOverride: const Color(0xFF1877F2).withOpacity(0.7),
                   onTap: () => _handleSocialLogin(OAuthProvider.facebook),
@@ -416,12 +421,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('이미 계정이 있으신가요?  ',
-                      style: TextStyle(color: kTextMuted, fontSize: 14)),
+                    Text('${l10n.noAccount}  ',
+                      style: const TextStyle(color: kTextMuted, fontSize: 14)),
                     GestureDetector(
                       onTap: () => context.go('/login'),
-                      child: const Text('로그인',
-                        style: TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w600)),
+                      child: Text(l10n.login,
+                        style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),

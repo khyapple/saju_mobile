@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
 import '../../widgets/glass_card.dart';
@@ -52,7 +53,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
       final data = await _api.getProfile(widget.profileId);
       setState(() => _profile = data);
     } catch (e) {
-      setState(() => _error = '프로필을 불러올 수 없습니다.');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() => _error = l10n.loadProfileFailed);
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -88,6 +92,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
 
   Future<void> _generateInterpretation() async {
     if (_generating) return;
+    final l10n = AppLocalizations.of(context);
     setState(() => _generating = true);
     try {
       // Await SSE stream — server saves interpretation to DB when done
@@ -97,7 +102,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('해석 생성에 실패했습니다: $e')),
+          SnackBar(content: Text('${l10n.generateInterpretation} failed: $e')),
         );
       }
     } finally {
@@ -123,6 +128,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
@@ -148,7 +154,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           onPressed: () => context.pop(),
         ),
         title: Text(
-          _profile?['name'] as String? ?? '프로필',
+          _profile?['name'] as String? ?? l10n.profileDetail,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -159,7 +165,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           if (_profile != null)
             IconButton(
               icon: const Icon(Icons.edit_outlined, color: kDark),
-              tooltip: '프로필 수정',
+              tooltip: l10n.editProfile,
               onPressed: _showEditSheet,
             ),
         ],
@@ -176,10 +182,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                 labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 overlayColor: WidgetStateProperty.all(Colors.transparent),
                 splashFactory: NoSplash.splashFactory,
-                tabs: const [
-                  Tab(text: '사주'),
-                  Tab(text: '해석'),
-                  Tab(text: '이벤트'),
+                tabs: [
+                  Tab(text: l10n.tabSaju),
+                  Tab(text: l10n.tabInterpretation),
+                  Tab(text: l10n.tabEvents),
                 ],
               ),
             ],
@@ -223,16 +229,16 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
             onTap: () => context.push('/profiles/${widget.profileId}/consultation'),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.auto_awesome, color: kInk, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.auto_awesome, color: kInk, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'AI 사주상담',
-                    style: TextStyle(
+                    l10n.aiConsultation,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: kInk,
@@ -249,27 +255,31 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     );
   }
 
-  Widget _errorView() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.error_outline, color: kTextMuted, size: 40),
-        const SizedBox(height: 12),
-        Text(_error!, style: const TextStyle(color: kTextMuted)),
-        const SizedBox(height: 16),
-        TextButton(
-          onPressed: _loadProfile,
-          child: const Text('다시 시도', style: TextStyle(color: kGold)),
-        ),
-      ],
-    ),
-  );
+  Widget _errorView() {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: kTextMuted, size: 40),
+          const SizedBox(height: 12),
+          Text(_error!, style: const TextStyle(color: kTextMuted)),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: _loadProfile,
+            child: Text(l10n.retry, style: const TextStyle(color: kGold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _chartTab() {
+    final l10n = AppLocalizations.of(context);
     final chart = _profile?['chart_data'] as Map<String, dynamic>?;
     if (chart == null) {
-      return const Center(
-        child: Text('차트 데이터가 없습니다.', style: TextStyle(color: kTextMuted)),
+      return Center(
+        child: Text(l10n.noChartData, style: const TextStyle(color: kTextMuted)),
       );
     }
     return ScrollConfiguration(
@@ -361,6 +371,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _infoCard() {
+    final l10n = AppLocalizations.of(context);
     final p = _profile ?? const <String, dynamic>{};
     final name = (p['name'] as String?) ?? '';
     // birth_date 우선, 없으면 birthYear/Month/Day로 조립 (num→int 안전 캐스트)
@@ -463,9 +474,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                               // 양력/음력 · 생년월일 · 성별
                               Text(
                                 [
-                                  if (calendarType != null) calendarType == 'solar' ? '양력' : '음력',
+                                  if (calendarType != null) calendarType == 'solar' ? l10n.solar : l10n.lunar,
                                   if (birthDate.isNotEmpty) _formatDate(birthDate),
-                                  if (gender != null) gender == 'male' ? '남성' : '여성',
+                                  if (gender != null) gender == 'male' ? l10n.male : l10n.female,
                                 ].join(' · '),
                                 style: const TextStyle(fontSize: 12, color: kTextMuted),
                               ),
@@ -505,9 +516,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   String _formatDate(String date) {
+    final l10n = AppLocalizations.of(context);
     final parts = date.split('-');
     if (parts.length != 3) return date;
-    return '${parts[0]}년 ${parts[1]}월 ${parts[2]}일';
+    return '${parts[0]}${l10n.year} ${parts[1]}${l10n.month} ${parts[2]}${l10n.day}';
   }
 
   // 십성(十星) 계산
@@ -561,6 +573,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   };
 
   Widget _luckTimeline(Map<String, dynamic> chart) {
+    final l10n = AppLocalizations.of(context);
     final luck = chart['majorLuck'] as List<dynamic>?;
     if (luck == null || luck.isEmpty) return const SizedBox.shrink();
 
@@ -597,8 +610,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('대운',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
+              Text(l10n.majorLuckPeriods,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kDark)),
               const SizedBox(height: 12),
               SizedBox(
                 height: 180,
@@ -659,14 +672,14 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                           children: [
                             const SizedBox(height: 12),
                             // 나이
-                            Text('$age세', style: TextStyle(
+                            Text('$age${l10n.age}', style: TextStyle(
                               fontSize: 11, fontWeight: FontWeight.w600,
                               color: isCurrent ? kGold : Colors.white54,
                             )),
                             const SizedBox(height: 5),
                             // 천간 십성
                             if (stemGod.isNotEmpty)
-                              Text(stemGod, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                              Text(SajuChartWidget.localizeTenGod(context, stemGod), style: const TextStyle(fontSize: 9, color: Colors.white54)),
                             const SizedBox(height: 2),
                             // 천간 카드
                             charCard(stem, stemColor, isWaterStem),
@@ -676,7 +689,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                             const SizedBox(height: 2),
                             // 지지 십성
                             if (branchGod.isNotEmpty)
-                              Text(branchGod, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                              Text(SajuChartWidget.localizeTenGod(context, branchGod), style: const TextStyle(fontSize: 9, color: Colors.white54)),
                           ],
                         ),
                         if (isCurrent)
@@ -689,8 +702,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                                 borderRadius: BorderRadius.circular(4),
                                 boxShadow: [BoxShadow(color: kDancheongRed.withOpacity(0.4), blurRadius: 6)],
                               ),
-                              child: const Text('현재',
-                                style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700)),
+                              child: Text(l10n.current,
+                                style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700)),
                             ),
                           ),
                       ],
@@ -749,16 +762,18 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   String _impactLabel(String impact) {
+    final l10n = AppLocalizations.of(context);
     switch (impact) {
-      case 'very_positive': return '매우 긍정';
-      case 'positive': return '긍정';
-      case 'negative': return '부정';
-      case 'very_negative': return '매우 부정';
-      default: return '중립';
+      case 'very_positive': return l10n.impactVeryPositive;
+      case 'positive': return l10n.impactPositive;
+      case 'negative': return l10n.impactNegative;
+      case 'very_negative': return l10n.impactVeryNegative;
+      default: return l10n.impactNeutral;
     }
   }
 
   void _showEventDetailSheet(Map<String, dynamic> event) {
+    final l10n = AppLocalizations.of(context);
     final year = (event['eventYear'] as num?)?.toInt();
     final month = (event['eventMonth'] as num?)?.toInt();
     final desc = event['description'] as String? ?? '';
@@ -768,7 +783,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final createdAt = event['createdAt'] as String?;
     final impactColor = _impactColor(impact);
     final impactLabel = _impactLabel(impact);
-    final dateText = month != null ? '$year년 $month월' : '$year년';
+    final dateText = month != null ? '$year${l10n.year} $month${l10n.month}' : '$year${l10n.year}';
 
     showModalBottomSheet(
       context: context,
@@ -838,7 +853,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                     const SizedBox(height: 6),
                     _notionProp(
                       icon: Icons.flag_outlined,
-                      label: '영향도',
+                      label: l10n.impact,
                       value: impactLabel,
                       valueColor: impactColor,
                       valueBg: impactColor.withOpacity(0.15),
@@ -890,8 +905,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                                 _showEditEventSheet(event);
                               },
                               icon: const Icon(Icons.edit_outlined, size: 18, color: kInk),
-                              label: const Text('수정',
-                                style: TextStyle(color: kInk, fontWeight: FontWeight.w700)),
+                              label: Text(l10n.edit,
+                                style: const TextStyle(color: kInk, fontWeight: FontWeight.w700)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kGold,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -907,8 +922,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                                 await _confirmDeleteEvent(eventId);
                               },
                               icon: const Icon(Icons.delete_outline, size: 18, color: kErrorColor),
-                              label: const Text('삭제',
-                                style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
+                              label: Text(l10n.delete,
+                                style: const TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: kErrorColor.withOpacity(0.5)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -974,25 +989,29 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Future<void> _confirmDeleteEvent(String eventId) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: kCosmicNavy.withOpacity(0.95),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('이벤트 삭제', style: TextStyle(color: kDark)),
-        content: const Text('이 이벤트를 삭제하시겠습니까?',
-          style: TextStyle(color: kTextMuted)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소', style: TextStyle(color: kTextMuted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('삭제', style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10nCtx = AppLocalizations.of(ctx);
+        return AlertDialog(
+          backgroundColor: kCosmicNavy.withOpacity(0.95),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(l10nCtx.deleteEvent, style: const TextStyle(color: kDark)),
+          content: Text(l10nCtx.deleteEventConfirm,
+            style: const TextStyle(color: kTextMuted)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10nCtx.cancel, style: const TextStyle(color: kTextMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10nCtx.delete, style: const TextStyle(color: kErrorColor, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
     try {
@@ -1001,13 +1020,14 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이벤트 삭제에 실패했습니다.')),
+          SnackBar(content: Text(l10n.deleteEventFailed)),
         );
       }
     }
   }
 
   Widget _eventsTab() {
+    final l10n = AppLocalizations.of(context);
     final events = _profile?['events'] as List<dynamic>? ?? [];
     debugPrint('=== _eventsTab: events count=${events.length}, raw=${events.isNotEmpty ? events.first : "empty"}');
 
@@ -1020,19 +1040,19 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
             children: [
               const Icon(Icons.event_note_outlined, color: kTextMuted, size: 40),
               const SizedBox(height: 16),
-              const Text(
-                '생활 이벤트를 기록해보세요',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
+              Text(
+                l10n.recordLifeEvents,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '중요한 사건을 기록하면\nAI 해석의 정확도가 높아집니다',
+              Text(
+                l10n.recordLifeEventsDesc,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: kTextMuted),
+                style: const TextStyle(fontSize: 13, color: kTextMuted),
               ),
               const SizedBox(height: 24),
               PrimaryButton(
-                text: '이벤트 추가',
+                text: l10n.addEvent,
                 onPressed: _showAddEventSheet,
                 width: 200,
               ),
@@ -1167,13 +1187,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                         child: const Icon(Icons.add, color: kGold, size: 16),
                       ),
                       const SizedBox(width: 10),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '중요한 사건을 기록해보세요',
-                            style: TextStyle(
+                            l10n.recordLifeEvents,
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: kGold,
@@ -1181,8 +1201,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                             ),
                           ),
                           Text(
-                            '사주 풀이가 더 정확해 집니다',
-                            style: TextStyle(
+                            l10n.recordLifeEventsDesc,
+                            style: const TextStyle(
                               fontSize: 11,
                               color: kTextMuted,
                               letterSpacing: 0.2,
@@ -1204,6 +1224,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _elementsDescription(Map<String, dynamic> chart) {
+    final l10n = AppLocalizations.of(context);
     // 기둥 데이터에서 직접 오행 수량 계산
     const stemElementMap = {
       '갑': 'wood', '을': 'wood',
@@ -1238,11 +1259,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     }
 
     final elements = [
-      ('木', 'wood', kWoodColor,  ['성장', '창의', '인자']),
-      ('火', 'fire', kFireColor,  ['열정', '예의', '지혜']),
-      ('土', 'earth', kEarthColor, ['신용', '안정', '포용']),
-      ('金', 'metal', kMetalColor, ['의리', '결단', '정의']),
-      ('水', 'water', kWaterColor, ['지혜', '유연', '지모']),
+      ('木', 'wood', kWoodColor,  [l10n.kwGrowth, l10n.kwCreativity, l10n.kwBenevolence]),
+      ('火', 'fire', kFireColor,  [l10n.kwPassion, l10n.kwEtiquette, l10n.kwWisdom]),
+      ('土', 'earth', kEarthColor, [l10n.kwTrust, l10n.kwStability, l10n.kwTolerance]),
+      ('金', 'metal', kMetalColor, [l10n.kwLoyalty, l10n.kwDecisiveness, l10n.kwJustice]),
+      ('水', 'water', kWaterColor, [l10n.kwWisdom, l10n.kwFlexibility, l10n.kwStrategy]),
     ];
 
     return ClipRRect(
@@ -1259,8 +1280,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('오행 분포',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+        Text(l10n.fiveElements,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
         const SizedBox(height: 12),
         ...elements.map((e) {
           final count = counts[e.$2] ?? 0;
@@ -1379,7 +1400,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                               const SizedBox(width: 8),
                               // 수량 맨 오른쪽
                               Text(
-                                '$count개',
+                                l10n.elementCount(count),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -1405,6 +1426,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _interpretationTab() {
+    final l10n = AppLocalizations.of(context);
     final profile = _profile;
     if (profile == null) return const SizedBox.shrink();
 
@@ -1433,19 +1455,19 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   children: [
                     const Icon(Icons.auto_awesome, color: kDancheongRed, size: 40),
                     const SizedBox(height: 16),
-                    const Text(
-                      'AI 해석을 생성해보세요',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
+                    Text(
+                      l10n.generateInterpretationDesc,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Claude AI가 당신의 사주를 상세히 분석합니다',
+                    Text(
+                      l10n.generateInterpretationDesc,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: kTextMuted),
+                      style: const TextStyle(fontSize: 13, color: kTextMuted),
                     ),
                     const SizedBox(height: 24),
                     PrimaryButton(
-                      text: '해석 생성',
+                      text: l10n.generateInterpretation,
                       onPressed: _generateInterpretation,
                       loading: _generating,
                       width: 200,
@@ -1510,6 +1532,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _generatingBanner() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -1518,15 +1541,15 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
           child: CircularProgressIndicator(color: kGold, strokeWidth: 2.5),
         ),
         const SizedBox(height: 20),
-        const Text(
-          '해석 생성 중...',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
+        Text(
+          l10n.generatingInterpretation,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'AI가 사주를 분석하고 있습니다\n잠시만 기다려주세요',
+        Text(
+          l10n.aiAnalyzingDesc,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: kTextMuted, height: 1.6),
+          style: const TextStyle(fontSize: 13, color: kTextMuted, height: 1.6),
         ),
         const SizedBox(height: 24),
         ClipRRect(
@@ -1540,9 +1563,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: kDancheongBlue.withOpacity(0.4)),
               ),
-              child: const Text(
-                '보통 1~2분 소요됩니다',
-                style: TextStyle(fontSize: 12, color: kDancheongBlue),
+              child: Text(
+                l10n.aiAnalyzingWait,
+                style: const TextStyle(fontSize: 12, color: kDancheongBlue),
               ),
             ),
           ),
@@ -1554,6 +1577,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   static const _sectionBorderColors = [kDancheongBlue, kDancheongRed, kDancheongYellow];
 
   Widget _sectionCard(int index, Map<String, dynamic> section, {bool blurred = false}) {
+    final l10n = AppLocalizations.of(context);
     final title = section['title'] as String? ?? '';
     final summary = section['summary'] as String? ?? '';
     final content = section['content'] as String? ?? '';
@@ -1688,8 +1712,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: const Text('토큰 추가하고 분석 전체 보기',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                                child: Text(l10n.addTokensToSee,
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                               ),
                             ),
                           ],
@@ -1811,8 +1835,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = '이름을 입력해주세요.');
+      setState(() => _error = l10n.nameRequired);
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -1838,31 +1863,38 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       widget.onSaved();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _error = '프로필 수정에 실패했습니다.');
+      if (mounted) {
+        final l10nMounted = AppLocalizations.of(context);
+        setState(() => _error = l10nMounted.editProfileFailed);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: kCosmicNavy.withOpacity(0.95),
-        title: const Text('프로필 삭제', style: TextStyle(color: kDark)),
-        content: const Text('이 프로필을 삭제하시겠습니까?\n삭제된 프로필은 복구할 수 없습니다.',
-          style: TextStyle(color: kTextMuted)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소', style: TextStyle(color: kTextMuted)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('삭제', style: TextStyle(color: kErrorColor)),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10nCtx = AppLocalizations.of(ctx);
+        return AlertDialog(
+          backgroundColor: kCosmicNavy.withOpacity(0.95),
+          title: Text(l10nCtx.deleteProfile, style: const TextStyle(color: kDark)),
+          content: Text(l10nCtx.deleteProfileConfirm,
+            style: const TextStyle(color: kTextMuted)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10nCtx.cancel, style: const TextStyle(color: kTextMuted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10nCtx.delete, style: const TextStyle(color: kErrorColor)),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
     setState(() { _loading = true; _error = null; });
@@ -1873,7 +1905,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         Navigator.pop(context); // go back to profiles list
       }
     } catch (e) {
-      setState(() => _error = '프로필 삭제에 실패했습니다.');
+      if (mounted) {
+        final l10nMounted = AppLocalizations.of(context);
+        setState(() => _error = l10nMounted.deleteProfileFailed);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1881,6 +1916,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -1894,8 +1930,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('프로필 수정',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
+                Text(l10n.editProfile,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
                 IconButton(
                   icon: const Icon(Icons.close, color: kTextMuted),
                   onPressed: () => Navigator.pop(context),
@@ -1903,15 +1939,15 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            _label('이름'),
+            _label(l10n.name),
             const SizedBox(height: 6),
-            _field(controller: _nameCtrl, hint: '홍길동'),
+            _field(controller: _nameCtrl, hint: l10n.nameHint),
             const SizedBox(height: 16),
-            _label('관계'),
+            _label(l10n.relationship),
             const SizedBox(height: 6),
-            _field(controller: _relationshipCtrl, hint: '예) 친구, 배우자, 부모님 (선택사항)'),
+            _field(controller: _relationshipCtrl, hint: l10n.relationshipHint),
             const SizedBox(height: 16),
-            _label('생년월일'),
+            _label(l10n.birthDate),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: _pickDate,
@@ -1928,8 +1964,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                     Expanded(
                       child: Text(
                         _birthDate == null
-                            ? '날짜를 선택하세요'
-                            : '${_birthDate!.year}년 ${_birthDate!.month}월 ${_birthDate!.day}일',
+                            ? l10n.selectDate
+                            : '${_birthDate!.year}${l10n.year} ${_birthDate!.month}${l10n.month} ${_birthDate!.day}${l10n.day}',
                         style: TextStyle(
                           fontSize: 15,
                           color: _birthDate == null ? kTextMuted : kDark),
@@ -1941,30 +1977,30 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            _label('성별'),
+            _label(l10n.gender),
             const SizedBox(height: 8),
             Row(children: [
-              Expanded(child: _chip('남성', 'male', _gender, (v) => setState(() => _gender = v))),
+              Expanded(child: _chip(l10n.male, 'male', _gender, (v) => setState(() => _gender = v))),
               const SizedBox(width: 12),
-              Expanded(child: _chip('여성', 'female', _gender, (v) => setState(() => _gender = v))),
+              Expanded(child: _chip(l10n.female, 'female', _gender, (v) => setState(() => _gender = v))),
             ]),
             const SizedBox(height: 16),
-            _label('달력 종류'),
+            _label(l10n.calendarType),
             const SizedBox(height: 8),
             Row(children: [
-              Expanded(child: _chip('양력', 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
+              Expanded(child: _chip(l10n.solar, 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
               const SizedBox(width: 12),
-              Expanded(child: _chip('음력', 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
+              Expanded(child: _chip(l10n.lunar, 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
             ]),
             const SizedBox(height: 16),
-            _label('태어난 시간'),
+            _label(l10n.birthHour),
             const SizedBox(height: 8),
             Row(children: [
-              Expanded(child: _chip('정확히', 'exact', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _chip(l10n.exactly, 'exact', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
               const SizedBox(width: 8),
-              Expanded(child: _chip('대략', 'rough', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _chip(l10n.approximately, 'rough', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
               const SizedBox(width: 8),
-              Expanded(child: _chip('모름', 'unknown', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _chip(l10n.unknown, 'unknown', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
             ]),
             if (_birthHourPrecision == 'exact') ...[
               const SizedBox(height: 12),
@@ -2042,7 +2078,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 child: _loading
                     ? const SizedBox(width: 20, height: 20,
                         child: CircularProgressIndicator(color: kInk, strokeWidth: 2))
-                    : const Text('저장', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    : Text(l10n.save, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(height: 12),
@@ -2057,8 +2093,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                     side: BorderSide(color: kErrorColor.withOpacity(0.3)),
                   ),
                 ),
-                child: const Text('프로필 삭제',
-                  style: TextStyle(fontSize: 14, color: kErrorColor, fontWeight: FontWeight.w600)),
+                child: Text(l10n.deleteProfile,
+                  style: const TextStyle(fontSize: 14, color: kErrorColor, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -2142,12 +2178,12 @@ class _AddEventSheetState extends State<_AddEventSheet> {
 
   bool get _isEditMode => widget.existingEvent != null;
 
-  static const _impacts = [
-    ('very_positive', '매우긍정', Color(0xFF4CAF50)),
-    ('positive', '긍정', Color(0xFF81C784)),
-    ('neutral', '중립', Color(0xFF8B87A0)),
-    ('negative', '부정', Color(0xFFE57373)),
-    ('very_negative', '매우부정', Color(0xFFC8393A)),
+  static const _impactKeys = [
+    ('very_positive', Color(0xFF4CAF50)),
+    ('positive', Color(0xFF81C784)),
+    ('neutral', Color(0xFF8B87A0)),
+    ('negative', Color(0xFFE57373)),
+    ('very_negative', Color(0xFFC8393A)),
   ];
 
   @override
@@ -2171,8 +2207,9 @@ class _AddEventSheetState extends State<_AddEventSheet> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (_descCtrl.text.trim().isEmpty) {
-      setState(() => _error = '내용을 입력해주세요.');
+      setState(() => _error = l10n.eventContentRequired);
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -2203,7 +2240,10 @@ class _AddEventSheetState extends State<_AddEventSheet> {
       widget.onAdded();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      setState(() => _error = _isEditMode ? '이벤트 수정에 실패했습니다.' : '이벤트 추가에 실패했습니다.');
+      if (mounted) {
+        final l10nMounted = AppLocalizations.of(context);
+        setState(() => _error = _isEditMode ? l10nMounted.updateEventFailed : l10nMounted.addEventFailed);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -2211,6 +2251,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SingleChildScrollView(
@@ -2222,7 +2263,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_isEditMode ? '이벤트 수정' : '이벤트 추가',
+                Text(_isEditMode ? l10n.editEvent : l10n.addEvent,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark)),
                 IconButton(
                   icon: const Icon(Icons.close, color: kTextMuted),
@@ -2231,15 +2272,15 @@ class _AddEventSheetState extends State<_AddEventSheet> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text('제목',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            Text(l10n.eventTitle,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
             TextField(
               controller: _titleCtrl,
               maxLines: 1,
               style: const TextStyle(fontSize: 14, color: kDark),
               decoration: InputDecoration(
-                hintText: '이벤트 제목을 입력해주세요',
+                hintText: l10n.eventTitleHint,
                 hintStyle: const TextStyle(color: kTextMuted, fontSize: 13),
                 filled: true, fillColor: const Color(0x0AFFFFFF),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
@@ -2252,8 +2293,8 @@ class _AddEventSheetState extends State<_AddEventSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('연도',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            Text(l10n.eventYear,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -2270,7 +2311,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
                       border: Border.all(color: kGlassBorder),
                     ),
                     child: Center(
-                      child: Text('$_year년',
+                      child: Text('$_year${l10n.year}',
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark)),
                     ),
                   ),
@@ -2284,34 +2325,34 @@ class _AddEventSheetState extends State<_AddEventSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text('월 (선택사항)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            Text(l10n.eventMonthOptional,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
             Row(children: [
               for (int m = 1; m <= 6; m++) Expanded(child: Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: _monthChip(m, '$m월'),
+                child: _monthChip(m, '$m${l10n.month}'),
               )),
             ]),
             const SizedBox(height: 6),
             Row(children: [
               for (int m = 7; m <= 12; m++) Expanded(child: Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: _monthChip(m, '$m월'),
+                child: _monthChip(m, '$m${l10n.month}'),
               )),
             ]),
             const SizedBox(height: 6),
-            _monthChip(null, '전체'),
+            _monthChip(null, l10n.allMonths),
             const SizedBox(height: 16),
-            const Text('내용',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            Text(l10n.eventContent,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
             TextField(
               controller: _descCtrl,
               maxLines: 3,
               style: const TextStyle(fontSize: 14, color: kDark),
               decoration: InputDecoration(
-                hintText: '어떤 일이 있었나요?',
+                hintText: l10n.eventContentHint,
                 hintStyle: const TextStyle(color: kTextMuted, fontSize: 13),
                 filled: true, fillColor: const Color(0x0AFFFFFF),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
@@ -2324,12 +2365,19 @@ class _AddEventSheetState extends State<_AddEventSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('영향도',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
+            Text(l10n.impact,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
             const SizedBox(height: 8),
             Row(
-              children: _impacts.map((item) {
+              children: _impactKeys.map((item) {
                 final selected = _impact == item.$1;
+                final impactLabel = switch (item.$1) {
+                  'very_positive' => l10n.impactVeryPositive,
+                  'positive' => l10n.impactPositive,
+                  'negative' => l10n.impactNegative,
+                  'very_negative' => l10n.impactVeryNegative,
+                  _ => l10n.impactNeutral,
+                };
                 return Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _impact = item.$1),
@@ -2351,7 +2399,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
                             size: 14, color: selected ? kInk : kTextMuted,
                           ),
                           const SizedBox(height: 4),
-                          Text(item.$2,
+                          Text(impactLabel,
                             style: TextStyle(fontSize: 10,
                               fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
                               color: selected ? kInk : kTextMuted),
@@ -2390,7 +2438,7 @@ class _AddEventSheetState extends State<_AddEventSheet> {
                 child: _loading
                     ? const SizedBox(width: 20, height: 20,
                         child: CircularProgressIndicator(color: kInk, strokeWidth: 2))
-                    : Text(_isEditMode ? '수정' : '추가',
+                    : Text(_isEditMode ? l10n.edit : l10n.add,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ),
             ),

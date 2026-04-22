@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profiles_provider.dart';
 import '../../services/api_service.dart';
@@ -197,6 +198,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final auth = context.watch<AuthProvider>();
     final profilesProvider = context.watch<ProfilesProvider>();
     final profiles = profilesProvider.profiles;
@@ -241,60 +243,92 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                     : const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   const SliverToBoxAdapter(child: DancheongBar()),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    sliver: SliverToBoxAdapter(
-                      child: GestureDetector(
-                        onTap: ownerProfile != null && !_isDragging
-                            ? () => context.push('/profiles/${ownerProfile.id}')
-                            : null,
-                        child: Row(
-                          children: [
-                            () {
-                              final color = ownerProfile != null
-                                  ? _ProfileCard._dayPillarColor(ownerProfile)
-                                  : kGold;
-                              final emoji = ownerProfile != null
-                                  ? _ProfileCard._zodiacEmoji(ownerProfile)
-                                  : '🐾';
-                              return Container(
-                                width: 52, height: 52,
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.15),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: color.withOpacity(0.5), width: 1.5),
+                  SliverToBoxAdapter(
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: 0, right: 0, top: -24, bottom: -24,
+                          child: IgnorePointer(
+                            child: ShaderMask(
+                              shaderCallback: (rect) => const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.white,
+                                  Colors.white,
+                                  Colors.transparent,
+                                ],
+                                stops: [0.0, 0.22, 0.78, 1.0],
+                              ).createShader(rect),
+                              blendMode: BlendMode.dstIn,
+                              child: ClipRect(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                                  child: Container(
+                                    color: Colors.white.withOpacity(0.08),
+                                  ),
                                 ),
-                                child: Center(
-                                  child: Text(emoji,
-                                    style: const TextStyle(fontSize: 26)),
-                                ),
-                              );
-                            }(),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          child: GestureDetector(
+                            onTap: ownerProfile != null && !_isDragging
+                                ? () => context.push('/profiles/${ownerProfile.id}')
+                                : null,
+                            child: Row(
                               children: [
-                                Text(
-                                  '안녕하세요, ${auth.displayName}님',
-                                  style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
-                                  ),
-                                ),
-                                Text(
-                                  _isDragging ? '놓을 위치로 드래그하세요' : '나의 사주 프로필 →',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: _isDragging
-                                        ? kGold.withOpacity(0.8)
-                                        : kDark.withOpacity(0.4),
-                                  ),
+                                () {
+                                  final color = ownerProfile != null
+                                      ? _ProfileCard._dayPillarColor(ownerProfile)
+                                      : kGold;
+                                  final emoji = ownerProfile != null
+                                      ? _ProfileCard._zodiacEmoji(ownerProfile)
+                                      : '🐾';
+                                  return Container(
+                                    width: 52, height: 52,
+                                    decoration: BoxDecoration(
+                                      color: color.withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: color.withOpacity(0.5), width: 1.5),
+                                    ),
+                                    child: Center(
+                                      child: Text(emoji,
+                                        style: const TextStyle(fontSize: 26)),
+                                    ),
+                                  );
+                                }(),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.helloUser(auth.displayName),
+                                      style: const TextStyle(
+                                        fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
+                                      ),
+                                    ),
+                                    Text(
+                                      _isDragging ? l10n.dragToReorder : l10n.mySajuProfile,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: _isDragging
+                                            ? kGold.withOpacity(0.8)
+                                            : kDark.withOpacity(0.4),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                   const SliverToBoxAdapter(
@@ -344,8 +378,8 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                               const SizedBox(height: 20),
                               TextButton(
                                 onPressed: profilesProvider.loadProfiles,
-                                child: const Text('다시 시도',
-                                    style: TextStyle(color: kGold)),
+                                child: Text(l10n.retry,
+                                    style: const TextStyle(color: kGold)),
                               ),
                             ],
                           ),
@@ -421,17 +455,18 @@ class _ProfilesScreenState extends State<ProfilesScreen>
     );
   }
 
-  String _planLabel(String plan) {
+  String _planLabel(AppLocalizations l10n, String plan) {
     switch (plan.toLowerCase()) {
-      case 'basic': return 'Basic 플랜';
-      case 'pro': return 'Pro 플랜';
-      case 'ultimate': return 'Ultimate 플랜';
-      default: return '무료 플랜';
+      case 'basic': return l10n.planBasic;
+      case 'pro': return l10n.planPro;
+      case 'ultimate': return l10n.planUltimate;
+      default: return l10n.planFree;
     }
   }
 
   Widget? _buildFab(Profile? ownerProfile, List<Profile> profiles) {
     if (profiles.isEmpty) return null;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -469,9 +504,9 @@ class _ProfilesScreenState extends State<ProfilesScreen>
               children: [
                 const Icon(Icons.auto_awesome, color: kInk, size: 18),
                 const SizedBox(width: 8),
-                const Text(
-                  'AI 사주상담',
-                  style: TextStyle(
+                Text(
+                  l10n.aiConsultation,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: kInk,
@@ -542,8 +577,8 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                     title: Text(p.name,
                       style: const TextStyle(fontSize: 14, color: kDark, fontWeight: FontWeight.w600)),
                     subtitle: p.isOwner
-                        ? const Text('나의 사주',
-                            style: TextStyle(fontSize: 11, color: kGold))
+                        ? Text(AppLocalizations.of(context).mySaju,
+                            style: const TextStyle(fontSize: 11, color: kGold))
                         : (p.relationship != null
                             ? Text(p.relationship!,
                                 style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.4)))
@@ -565,6 +600,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
   }
 
   Widget _buildDrawer(AuthProvider auth) {
+    final l10n = AppLocalizations.of(context);
     return Drawer(
       backgroundColor: Colors.transparent,
       child: ClipRect(
@@ -677,7 +713,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                     const Icon(Icons.star, color: kGold, size: 14),
                                     const SizedBox(width: 4),
                                     Text(
-                                      _planLabel(_plan),
+                                      _planLabel(l10n, _plan),
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
@@ -692,9 +728,9 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                   children: [
                                     const Icon(Icons.bolt, color: kGold, size: 14),
                                     const SizedBox(width: 4),
-                                    const Text(
-                                      '남은 토큰',
-                                      style: TextStyle(fontSize: 12, color: kTextMuted),
+                                    Text(
+                                      l10n.remainingTokens,
+                                      style: const TextStyle(fontSize: 12, color: kTextMuted),
                                     ),
                                     const Spacer(),
                                     Text(
@@ -747,14 +783,14 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                         ),
                                       ],
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.bolt, color: kInk, size: 14),
-                                        SizedBox(width: 5),
+                                        const Icon(Icons.bolt, color: kInk, size: 14),
+                                        const SizedBox(width: 5),
                                         Text(
-                                          '토큰 충전',
-                                          style: TextStyle(
+                                          l10n.addTokens,
+                                          style: const TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                             color: kInk,
@@ -774,7 +810,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                         // ── 메뉴 ──────────────────────────────
                         ListTile(
                           leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                          title: const Text('궁합 분석', style: TextStyle(color: kDark)),
+                          title: Text(l10n.compatibilityTitle, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/compatibility');
@@ -782,7 +818,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                         ),
                         ListTile(
                           leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                          title: const Text('환경 설정', style: TextStyle(color: kDark)),
+                          title: Text(l10n.settings, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/settings');
@@ -790,7 +826,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                         ),
                         ListTile(
                           leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
-                          title: const Text('마이페이지', style: TextStyle(color: kDark)),
+                          title: Text(l10n.myPage, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
                             context.push('/account');
@@ -810,7 +846,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    '로그아웃',
+                                    l10n.logout,
                                     style: TextStyle(
                                       color: kErrorColor.withOpacity(0.7),
                                       fontSize: 14,
@@ -902,6 +938,7 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isOwner = profile.isOwner;
 
     // 반사광을 위한 그림자는 ClipRRect 바깥에 둬야 보임
@@ -1018,7 +1055,7 @@ class _ProfileCard extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.35))),
           ] else if (profile.birthHourPrecision == 'unknown') ...[
             const SizedBox(height: 2),
-            Text('시간 미상',
+            Text(l10n.timeUnknown,
                 style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.25))),
           ],
               ],
@@ -1037,8 +1074,8 @@ class _ProfileCard extends StatelessWidget {
                       boxShadow: [BoxShadow(
                           color: kDancheongRed.withOpacity(0.3), blurRadius: 8)],
                     ),
-                    child: const Text('나의 사주',
-                        style: TextStyle(
+                    child: Text(l10n.mySaju,
+                        style: const TextStyle(
                             fontSize: 10, color: Colors.white,
                             fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                   ),
@@ -1075,6 +1112,7 @@ class _AddProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -1151,7 +1189,7 @@ class _AddProfileCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '프로필 추가',
+                    l10n.addProfile,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
