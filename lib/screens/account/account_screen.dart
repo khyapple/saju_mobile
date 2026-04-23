@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/profiles_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
+import '../../widgets/dancheong_bar.dart';
 import '../../widgets/glass_card.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -347,10 +348,12 @@ class _AccountScreenState extends State<AccountScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                const DancheongBar(height: 16),
+                const SizedBox(height: 16),
                 // 프로필 카드
                 GlassCard(
                   padding: const EdgeInsets.all(20),
@@ -443,7 +446,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: () {},
+                                onPressed: () => _showPlanSelectionModal(plan),
                                 icon: const Icon(Icons.auto_awesome, size: 18, color: kInk),
                                 label: Text(
                                   l10n.upgrade,
@@ -468,14 +471,30 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
               ),
-              // 로그아웃 고정 하단
+              // 로그아웃 - 오른쪽 하단 텍스트 + 아이콘
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: _menuItem(
-                  icon: Icons.logout,
-                  label: l10n.logout,
-                  onTap: _signOut,
-                  color: kErrorColor,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _signOut,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.logout,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: kErrorColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.logout, size: 16, color: kErrorColor),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -488,10 +507,256 @@ class _AccountScreenState extends State<AccountScreen> {
   String _planLabel(AppLocalizations l10n, String plan) {
     switch (plan.toLowerCase()) {
       case 'basic': return l10n.planBasic;
-      case 'pro': return l10n.planPro;
-      case 'ultimate': return l10n.planUltimate;
+      case 'plus':
+      case 'pro':
+      case 'ultimate':
+        return l10n.planPlus;
       default: return l10n.planFree;
     }
+  }
+
+  String _normalizePlan(String plan) {
+    final p = plan.toLowerCase();
+    if (p == 'basic') return 'basic';
+    if (p == 'plus' || p == 'pro' || p == 'ultimate') return 'plus';
+    return 'free';
+  }
+
+  Future<void> _showPlanSelectionModal(String currentPlan) async {
+    final l10n = AppLocalizations.of(context);
+    final normalized = _normalizePlan(currentPlan);
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    kCosmicNavy.withOpacity(0.92),
+                    kCosmicPurple.withOpacity(0.88),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: kGlassBorder, width: 0.8),
+              ),
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 44, 20, 20),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _planCard(
+                            l10n: l10n,
+                            planKey: 'free',
+                            title: l10n.planFree,
+                            price: l10n.priceFreeLabel,
+                            features: l10n.planFeatures('free'),
+                            isCurrent: normalized == 'free',
+                            onSelect: () => Navigator.pop(ctx),
+                          ),
+                          const SizedBox(height: 12),
+                          _planCard(
+                            l10n: l10n,
+                            planKey: 'basic',
+                            title: l10n.planBasic,
+                            price: l10n.pricePerMonth('4,900'),
+                            features: l10n.planFeatures('basic'),
+                            isCurrent: normalized == 'basic',
+                            onSelect: () => Navigator.pop(ctx),
+                          ),
+                          const SizedBox(height: 12),
+                          _planCard(
+                            l10n: l10n,
+                            planKey: 'plus',
+                            title: l10n.planPlus,
+                            price: l10n.pricePerMonth('9,900'),
+                            features: l10n.planFeatures('plus'),
+                            isCurrent: normalized == 'plus',
+                            highlight: true,
+                            onSelect: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.pop(ctx),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.close, size: 16, color: kDark),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _planCard({
+    required AppLocalizations l10n,
+    required String planKey,
+    required String title,
+    required String price,
+    required List<String> features,
+    required bool isCurrent,
+    required VoidCallback onSelect,
+    bool highlight = false,
+  }) {
+    final borderColor = isCurrent
+        ? kGold
+        : (highlight ? kGold.withOpacity(0.22) : kGlassBorder);
+    final bgColor = switch (planKey) {
+      'basic' => kGold.withOpacity(0.09),
+      'plus' => kGold.withOpacity(0.16),
+      _ => kGold.withOpacity(0.04),
+    };
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: isCurrent ? 1.4 : 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: kDark,
+                      ),
+                    ),
+                    if (isCurrent) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: kGold.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: kGold.withOpacity(0.5), width: 0.6),
+                        ),
+                        child: Text(
+                          l10n.currentPlanBadge,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: kGold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                price,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: kDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...features.map(
+            (f) => Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: kTextMuted,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      f,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: kDark,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: isCurrent
+                ? Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: kGold.withOpacity(0.5), width: 0.8),
+                    ),
+                    child: Text(
+                      l10n.currentPlanBadge,
+                      style: const TextStyle(
+                        color: kGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: onSelect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0x14FFFFFF),
+                      foregroundColor: kDark,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      l10n.selectThisPlan,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: kDark,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _menuItem({

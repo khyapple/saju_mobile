@@ -231,113 +231,133 @@ class _ProfilesScreenState extends State<ProfilesScreen>
         child: SafeArea(
           child: FadeTransition(
             opacity: CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut),
-            child: RefreshIndicator(
-              color: kGold,
-              backgroundColor: kCosmicNavy,
-              onRefresh: _isDragging ? () async {} : () => profilesProvider.loadProfiles(),
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
-                child: CustomScrollView(
-                physics: _isDragging
-                    ? const NeverScrollableScrollPhysics()
-                    : const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  const SliverToBoxAdapter(child: DancheongBar()),
-                  SliverToBoxAdapter(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(
-                          left: 0, right: 0, top: -24, bottom: -24,
-                          child: IgnorePointer(
-                            child: ShaderMask(
-                              shaderCallback: (rect) => const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.white,
-                                  Colors.white,
-                                  Colors.transparent,
-                                ],
-                                stops: [0.0, 0.22, 0.78, 1.0],
-                              ).createShader(rect),
-                              blendMode: BlendMode.dstIn,
-                              child: ClipRect(
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-                                  child: Container(
-                                    color: Colors.white.withOpacity(0.08),
-                                  ),
-                                ),
+            child: Column(
+              children: [
+                // ── 고정 헤더: 인사문구 + 상·하 문양선 (블록 전체를 위로 이동) ──
+                Transform.translate(
+                  offset: const Offset(0, -4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                const DancheongBar(centerAsset: 'assets/images/divider_center_02.png'),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned(
+                      left: 0, right: 0, top: -24, bottom: -24,
+                      child: IgnorePointer(
+                        child: ShaderMask(
+                          shaderCallback: (rect) => const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.white,
+                              Colors.white,
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.22, 0.78, 1.0],
+                          ).createShader(rect),
+                          blendMode: BlendMode.dstIn,
+                          child: ClipRect(
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                              child: Container(
+                                color: Colors.white.withOpacity(0.08),
                               ),
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          child: GestureDetector(
-                            onTap: ownerProfile != null && !_isDragging
-                                ? () => context.push('/profiles/${ownerProfile.id}')
-                                : null,
-                            child: Row(
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: GestureDetector(
+                        onTap: ownerProfile != null && !_isDragging
+                            ? () => context.push('/profiles/${ownerProfile.id}')
+                            : null,
+                        child: Row(
+                          children: [
+                            () {
+                              final color = ownerProfile != null
+                                  ? _ProfileCard._dayPillarColor(ownerProfile)
+                                  : kGold;
+                              final emoji = ownerProfile != null
+                                  ? _ProfileCard._zodiacEmoji(ownerProfile)
+                                  : '🐾';
+                              return Container(
+                                width: 52, height: 52,
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: dayPillarBorderColor(color, opacity: 0.5),
+                                    width: 1.5),
+                                ),
+                                child: Center(
+                                  child: Text(emoji,
+                                    style: const TextStyle(fontSize: 26)),
+                                ),
+                              );
+                            }(),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                () {
-                                  final color = ownerProfile != null
-                                      ? _ProfileCard._dayPillarColor(ownerProfile)
-                                      : kGold;
-                                  final emoji = ownerProfile != null
-                                      ? _ProfileCard._zodiacEmoji(ownerProfile)
-                                      : '🐾';
-                                  return Container(
-                                    width: 52, height: 52,
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: color.withOpacity(0.5), width: 1.5),
-                                    ),
-                                    child: Center(
-                                      child: Text(emoji,
-                                        style: const TextStyle(fontSize: 26)),
-                                    ),
-                                  );
-                                }(),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.helloUser(auth.displayName),
-                                      style: const TextStyle(
-                                        fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
-                                      ),
-                                    ),
-                                    Text(
-                                      _isDragging ? l10n.dragToReorder : l10n.mySajuProfile,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: _isDragging
-                                            ? kGold.withOpacity(0.8)
-                                            : kDark.withOpacity(0.4),
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  l10n.helloUser(auth.displayName),
+                                  style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.w600, color: kDark,
+                                  ),
+                                ),
+                                Text(
+                                  _isDragging ? l10n.dragToReorder : l10n.mySajuProfile,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: _isDragging
+                                        ? kGold.withOpacity(0.8)
+                                        : kDark.withOpacity(0.4),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: 16),
-                      child: DancheongBar(),
-                    ),
-                  ),
-
+                  ],
+                ),
+                const DancheongBar(centerAsset: 'assets/images/divider_center_02.png'),
+                    ], // inner Column children
+                  ), // inner Column
+                ), // Transform.translate
+                // ── 스크롤 영역: 프로필 그리드 ─────────
+                Expanded(
+                  child: RefreshIndicator(
+                    color: kGold,
+                    backgroundColor: kCosmicNavy,
+                    onRefresh: _isDragging ? () async {} : () => profilesProvider.loadProfiles(),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        // 상단 페이드 구간 (px) → 비율로 변환
+                        const fadePx = 8.0;
+                        final stop = (fadePx / constraints.maxHeight).clamp(0.0, 1.0);
+                        return ShaderMask(
+                          shaderCallback: (rect) => LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: const [Colors.transparent, Colors.white],
+                            stops: [0.0, stop],
+                          ).createShader(rect),
+                          blendMode: BlendMode.dstIn,
+                          child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(overscroll: false),
+                      child: CustomScrollView(
+                physics: _isDragging
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  const SliverPadding(padding: EdgeInsets.only(top: 8)),
                   // ── 로딩 ────────────────────────────────
                   if (profilesProvider.loading)
                     SliverPadding(
@@ -448,7 +468,13 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                 ],
               ), // CustomScrollView
               ), // ScrollConfiguration
-            ),
+                        ); // ShaderMask
+                      }, // LayoutBuilder builder
+                    ), // LayoutBuilder
+                  ), // RefreshIndicator
+                ), // Expanded
+              ], // Column children
+            ), // Column
           ),
         ),
       ),
@@ -707,7 +733,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                   Divider(color: kGlassBorder, height: 1),
                                   const SizedBox(height: 14),
                                 ],
-                                // 플랜
+                                // 플랜 이름 (왼쪽) + 남은 토큰 (오른쪽)
                                 Row(
                                   children: [
                                     const Icon(Icons.star, color: kGold, size: 14),
@@ -720,23 +746,11 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                         color: kDark,
                                       ),
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                // 토큰 잔량
-                                Row(
-                                  children: [
-                                    const Icon(Icons.bolt, color: kGold, size: 14),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      l10n.remainingTokens,
-                                      style: const TextStyle(fontSize: 12, color: kTextMuted),
-                                    ),
                                     const Spacer(),
+                                    const Icon(Icons.bolt, color: kGold, size: 14),
+                                    const SizedBox(width: 2),
                                     Text(
-                                      _tokensRemaining != null
-                                          ? '$_tokensRemaining${_tokensLimit != null ? " / $_tokensLimit" : ""}'
-                                          : '—',
+                                      '${_tokensRemaining ?? 0}${_tokensLimit != null ? " / $_tokensLimit" : ""}',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -809,7 +823,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                         const SizedBox(height: 8),
                         // ── 메뉴 ──────────────────────────────
                         ListTile(
-                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          leading: Image.asset('assets/images/menu_icon.png', width: 16, height: 16),
                           title: Text(l10n.compatibilityTitle, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
@@ -817,7 +831,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                           },
                         ),
                         ListTile(
-                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          leading: Image.asset('assets/images/menu_icon.png', width: 16, height: 16),
                           title: Text(l10n.settings, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
@@ -825,7 +839,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                           },
                         ),
                         ListTile(
-                          leading: Image.asset('assets/images/menu_icon.png', width: 24, height: 24),
+                          leading: Image.asset('assets/images/menu_icon.png', width: 16, height: 16),
                           title: Text(l10n.myPage, style: const TextStyle(color: kDark)),
                           onTap: () {
                             Navigator.pop(context);
@@ -1020,7 +1034,7 @@ class _ProfileCard extends StatelessWidget {
                       color.withOpacity(0.20),
                       color.withOpacity(0.06),
                     ]),
-                    border: Border.all(color: color.withOpacity(0.35)),
+                    border: Border.all(color: dayPillarBorderColor(color, opacity: 0.35)),
                   ),
                   child: Text(
                     _zodiacEmoji(profile),

@@ -2,10 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/locale_provider.dart';
 import '../../widgets/cosmic_background.dart';
+import '../../widgets/dancheong_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -31,15 +33,17 @@ class SettingsScreen extends StatelessWidget {
         child: SizedBox.expand(
           child: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const DancheongBar(height: 16),
+                  const SizedBox(height: 20),
                   _sectionLabel(l10n.settings),
                   _menuItem(
                     icon: Icons.notifications_outlined,
                     label: l10n.notificationSettings,
-                    onTap: () {},
+                    onTap: () => _showNotificationsSheet(context),
                   ),
                   _menuItem(
                     icon: Icons.language,
@@ -195,6 +199,18 @@ class SettingsScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => const _HelpSheet(),
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kCosmicNavy.withOpacity(0.97),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const _NotificationsSheet(),
     );
   }
 
@@ -703,4 +719,291 @@ class _HelpSheet extends StatelessWidget {
       '• You can also review the Privacy Policy and Terms of Service from Settings.',
     ),
   ];
+}
+
+/// 알림 채널 / Notification delivery channel
+enum _NotifChannel { off, push, email, both }
+
+extension on _NotifChannel {
+  String get storageKey => switch (this) {
+        _NotifChannel.off => 'off',
+        _NotifChannel.push => 'push',
+        _NotifChannel.email => 'email',
+        _NotifChannel.both => 'both',
+      };
+
+  String get label => switch (this) {
+        _NotifChannel.off => '끄기',
+        _NotifChannel.push => '푸시',
+        _NotifChannel.email => '이메일',
+        _NotifChannel.both => '모두',
+      };
+
+  IconData get icon => switch (this) {
+        _NotifChannel.off => Icons.notifications_off_outlined,
+        _NotifChannel.push => Icons.notifications_active_outlined,
+        _NotifChannel.email => Icons.mail_outline,
+        _NotifChannel.both => Icons.all_inclusive,
+      };
+}
+
+class _NotificationsSheet extends StatefulWidget {
+  const _NotificationsSheet();
+
+  @override
+  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends State<_NotificationsSheet> {
+  static const _eventKey = 'notif.event_channel';
+  static const _fortuneKey = 'notif.fortune_channel';
+
+  _NotifChannel _event = _NotifChannel.push;
+  _NotifChannel _fortune = _NotifChannel.push;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _event = _NotifChannelExt.fromStorage(prefs.getString(_eventKey));
+      _fortune = _NotifChannelExt.fromStorage(prefs.getString(_fortuneKey));
+      _loading = false;
+    });
+  }
+
+  Future<void> _setEvent(_NotifChannel v) async {
+    setState(() => _event = v);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_eventKey, v.storageKey);
+  }
+
+  Future<void> _setFortune(_NotifChannel v) async {
+    setState(() => _fortune = v);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_fortuneKey, v.storageKey);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: kGlassBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '알림 설정',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark),
+            ),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: CircularProgressIndicator(color: kGold)),
+              )
+            else ...[
+              _ReminderCard(
+                icon: Icons.edit_note,
+                time: '오후 8:00',
+                title: '오늘 하루 어땠나요?',
+                subtitle: '저녁 8시에 오늘의 이벤트를 작성하도록 알려드려요.',
+                current: _event,
+                onChanged: _setEvent,
+              ),
+              const SizedBox(height: 12),
+              _ReminderCard(
+                icon: Icons.wb_sunny_outlined,
+                time: '오전 9:30',
+                title: '오늘의 운세',
+                subtitle: '아침 9시 30분에 오늘의 운세를 알려드려요.',
+                current: _fortune,
+                onChanged: _setFortune,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+extension _NotifChannelExt on _NotifChannel {
+  static _NotifChannel fromStorage(String? v) {
+    switch (v) {
+      case 'push': return _NotifChannel.push;
+      case 'email': return _NotifChannel.email;
+      case 'both': return _NotifChannel.both;
+      default: return _NotifChannel.off;
+    }
+  }
+}
+
+class _ReminderCard extends StatelessWidget {
+  final IconData icon;
+  final String time;
+  final String title;
+  final String subtitle;
+  final _NotifChannel current;
+  final ValueChanged<_NotifChannel> onChanged;
+
+  const _ReminderCard({
+    required this.icon,
+    required this.time,
+    required this.title,
+    required this.subtitle,
+    required this.current,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0x0AFFFFFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kGlassBorder, width: 0.6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: kGold.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: kGold.withOpacity(0.3), width: 0.6),
+                ),
+                child: Icon(icon, size: 16, color: kGold),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: kGold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: kTextMuted,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _NotifChannel.values
+                .map((c) => _ChannelChip(
+                      channel: c,
+                      selected: current == c,
+                      onTap: () => onChanged(c),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChannelChip extends StatelessWidget {
+  final _NotifChannel channel;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ChannelChip({
+    required this.channel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isOff = channel == _NotifChannel.off;
+    final activeColor = isOff ? kErrorColor : kGold;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? activeColor.withOpacity(0.14) : const Color(0x0AFFFFFF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? activeColor.withOpacity(0.6) : kGlassBorder,
+            width: selected ? 1.2 : 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              channel.icon,
+              size: 14,
+              color: selected ? activeColor : kTextMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              channel.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected ? activeColor : kDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

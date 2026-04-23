@@ -206,6 +206,43 @@ class ApiService {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  // ─── 채팅 세션 업데이트 (제목/고정) ────────────────────────
+  Future<void> updateChatSession(
+    String profileId,
+    String sessionId, {
+    String? title,
+    bool? pinned,
+  }) async {
+    final headers = await _authHeaders();
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (pinned != null) body['pinned'] = pinned;
+    final url = '$_base/api/profiles/$profileId/chat?sessionId=$sessionId';
+    final payload = jsonEncode(body);
+    final res = await http.patch(
+      Uri.parse(url),
+      headers: headers,
+      body: payload,
+    );
+    if (res.statusCode != 200) {
+      // Short, actionable error text first so the floating toast is readable.
+      final snippet = res.body.length > 180 ? '${res.body.substring(0, 180)}…' : res.body;
+      throw Exception('[${res.statusCode}] $snippet');
+    }
+  }
+
+  // ─── 채팅 세션 삭제 ────────────────────────────────────────
+  Future<void> deleteChatSession(String profileId, String sessionId) async {
+    final headers = await _authHeaders();
+    final res = await http.delete(
+      Uri.parse('$_base/api/profiles/$profileId/chat?sessionId=$sessionId'),
+      headers: headers,
+    );
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      throw Exception('채팅 세션 삭제 실패 (${res.statusCode}): ${res.body}');
+    }
+  }
+
   // ─── 채팅 메시지 전송 (SSE 스트리밍 응답을 누적해서 반환) ──────
   Future<String> sendMessage(
     String sessionId,

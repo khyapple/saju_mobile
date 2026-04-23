@@ -8,6 +8,7 @@ import '../../providers/profiles_provider.dart';
 import '../../models/profile.dart';
 import '../../services/api_service.dart';
 import '../../widgets/cosmic_background.dart';
+import '../../widgets/dancheong_bar.dart';
 import '../../widgets/glass_card.dart';
 
 // 분석 기록 모델
@@ -43,6 +44,7 @@ class _CompatType {
 const _compatTypes = [
   _CompatType(label: '연애', prompt: '두 사람의 연애궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.favorite_outline),
   _CompatType(label: '결혼', prompt: '두 사람의 결혼궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.diamond_outlined),
+  _CompatType(label: '가족', prompt: '두 사람의 가족궁합(부모-자식 또는 형제자매 관계)을 사주를 기반으로 상세히 분석해주세요. 특히 소통 방식, 갈등 요인, 서로 맞춰가는 법에 집중해주세요.', icon: Icons.family_restroom),
   _CompatType(label: '사업', prompt: '두 사람의 사업궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.handshake_outlined),
   _CompatType(label: '우정', prompt: '두 사람의 우정궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.people_outline),
 ];
@@ -305,10 +307,12 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                 ? const Center(child: CircularProgressIndicator(color: kGold))
                 : SingleChildScrollView(
                     controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const DancheongBar(height: 16),
+                        const SizedBox(height: 16),
                         // ── 프로필 선택 박스 2개 ──────────────────────
                         Row(
                           children: [
@@ -714,7 +718,9 @@ class _SelectedProfile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
                 shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+                border: Border.all(
+                  color: dayPillarBorderColor(color, opacity: 0.6),
+                  width: 1.5),
               ),
               child: Center(
                 child: Text(emoji,
@@ -859,7 +865,7 @@ class _ProfilePickerTile extends StatelessWidget {
                 color: _dayPillarColor(profile).withOpacity(0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _dayPillarColor(profile).withOpacity(0.4)),
+                  color: dayPillarBorderColor(_dayPillarColor(profile), opacity: 0.4)),
               ),
               child: Center(
                 child: Text(_zodiacEmoji(profile),
@@ -889,6 +895,23 @@ class _ProfilePickerTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10, color: kGold,
                               fontWeight: FontWeight.w700)),
+                        ),
+                      ] else if ((profile.relationship ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: kDark.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: kGlassBorder, width: 0.6),
+                          ),
+                          child: Text(profile.relationship!.trim(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: kDark.withOpacity(0.8),
+                              fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ],

@@ -109,6 +109,29 @@ class AppLocalizations {
   String get planBasic => _t('planBasic');
   String get planPro => _t('planPro');
   String get planUltimate => _t('planUltimate');
+  String get planPlus => _t('planPlus');
+  String get selectPlan => _t('selectPlan');
+  String get currentPlanBadge => _t('currentPlanBadge');
+  String get selectThisPlan => _t('selectThisPlan');
+  String get priceFreeLabel => _t('priceFreeLabel');
+  String pricePerMonth(String price) => _t('pricePerMonth').replaceAll('{price}', price);
+  List<String> planFeatures(String plan) {
+    final isKo = locale.languageCode == 'ko';
+    switch (plan) {
+      case 'basic':
+        return isKo
+            ? ['AI 사주 상담 해금', '프로필 5개 저장', '월 100,000 토큰', '궁합 분석 기본']
+            : ['Unlock AI Saju consultation', 'Store up to 5 profiles', '100,000 tokens/month', 'Basic compatibility analysis'];
+      case 'plus':
+        return isKo
+            ? ['무제한 AI 사주 상담', '프로필 무제한', '무제한 토큰', '심화 궁합 분석', '이벤트 타로 해석', '우선 고객 지원']
+            : ['Unlimited AI consultation', 'Unlimited profiles', 'Unlimited tokens', 'Advanced compatibility', 'Event tarot reading', 'Priority support'];
+      default:
+        return isKo
+            ? ['기본 사주 분석', '프로필 1개 저장', '월 10,000 토큰']
+            : ['Basic Saju analysis', '1 profile slot', '10,000 tokens/month'];
+    }
+  }
   String get settings => _t('settings');
   String get notificationSettings => _t('notificationSettings');
   String get languageSettings => _t('languageSettings');
@@ -365,9 +388,15 @@ const _strings = <String, Map<String, String>>{
     'tokensRemaining': '{n}개 남음',
     'tokenUsageOf': '{used} / {total}',
     'planFree': '무료 플랜',
-    'planBasic': 'Basic 플랜',
+    'planBasic': '기본 플랜',
     'planPro': 'Pro 플랜',
     'planUltimate': 'Ultimate 플랜',
+    'planPlus': '플러스 플랜',
+    'selectPlan': '플랜 선택',
+    'currentPlanBadge': '현재 이용 중',
+    'selectThisPlan': '이 플랜 선택',
+    'priceFreeLabel': '무료',
+    'pricePerMonth': '₩{price}/월',
     'settings': '설정',
     'notificationSettings': '알림 설정',
     'languageSettings': '언어 설정',
@@ -602,6 +631,12 @@ const _strings = <String, Map<String, String>>{
     'planBasic': 'Basic Plan',
     'planPro': 'Pro Plan',
     'planUltimate': 'Ultimate Plan',
+    'planPlus': 'Plus Plan',
+    'selectPlan': 'Select Plan',
+    'currentPlanBadge': 'Current',
+    'selectThisPlan': 'Select Plan',
+    'priceFreeLabel': 'Free',
+    'pricePerMonth': '\${price}/mo',
     'settings': 'Settings',
     'notificationSettings': 'Notifications',
     'languageSettings': 'Language',

@@ -266,17 +266,12 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
       body: CosmicBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const DancheongBar(),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.addProfileDesc,
-                  style: const TextStyle(fontSize: 13, color: kTextMuted),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 _label(l10n.name),
                 const SizedBox(height: 6),
                 _field(controller: _nameCtrl, hint: l10n.nameHint),

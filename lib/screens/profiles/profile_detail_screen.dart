@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +29,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   bool _loading = true;
   String? _error;
   bool _generating = false; // interpretation in progress
+  bool _autoTriggered = false; // guard: auto-generate only once per screen
 
   final ApiService _api = ApiService();
 
@@ -52,6 +54,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     try {
       final data = await _api.getProfile(widget.profileId);
       setState(() => _profile = data);
+      if (!_autoTriggered && !_generating && !_hasAnyInterpretation(data)) {
+        _autoTriggered = true;
+        unawaited(_generateInterpretation());
+      }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -434,7 +440,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                               pillarColor.withOpacity(0.20),
                               pillarColor.withOpacity(0.06),
                             ]),
-                            border: Border.all(color: pillarColor.withOpacity(0.35)),
+                            border: Border.all(color: dayPillarBorderColor(pillarColor, opacity: 0.35)),
                           ),
                           child: Text(
                             _zodiacEmoji(chartData),
@@ -1426,7 +1432,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
   }
 
   Widget _interpretationTab() {
-    final l10n = AppLocalizations.of(context);
     final profile = _profile;
     if (profile == null) return const SizedBox.shrink();
 
@@ -1443,37 +1448,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final hasInterpretation = (sections != null && sections.isNotEmpty) ||
         (rawText != null && rawText.isNotEmpty);
 
-    // Show generating banner if no interpretation yet
+    // Auto-generation is triggered on profile load — show loading banner until ready
     if (!hasInterpretation) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: _generating
-              ? _generatingBanner()
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.auto_awesome, color: kDancheongRed, size: 40),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.generateInterpretationDesc,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kDark),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.generateInterpretationDesc,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, color: kTextMuted),
-                    ),
-                    const SizedBox(height: 24),
-                    PrimaryButton(
-                      text: l10n.generateInterpretation,
-                      onPressed: _generateInterpretation,
-                      loading: _generating,
-                      width: 200,
-                    ),
-                  ],
-                ),
+          child: _generatingBanner(),
         ),
       );
     }

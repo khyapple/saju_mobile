@@ -202,13 +202,13 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ],
                         ),
-                        child: const Center(
-                          child: Text(
-                            '命',
-                            style: TextStyle(
-                              fontSize: 40,
-                              color: kGold,
-                              fontWeight: FontWeight.w300,
+                        child: Center(
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -229,12 +229,13 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Column(
                         children: [
                           Text(
-                            '사  주',
+                            '사 주',
                             style: TextStyle(
+                              fontFamily: 'ShillaCulture',
                               fontSize: 36,
                               color: kGold,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 6,
                               shadows: [
                                 Shadow(
                                   color: kGold.withOpacity(0.3),
@@ -244,17 +245,10 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(width: 30, height: 0.5, color: kGold.withOpacity(0.3)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Text('◈',
-                                  style: TextStyle(color: kGold.withOpacity(0.5), fontSize: 7)),
-                              ),
-                              Container(width: 30, height: 0.5, color: kGold.withOpacity(0.3)),
-                            ],
+                          Image.asset(
+                            'assets/images/divider_center_02.png',
+                            height: 14,
+                            fit: BoxFit.contain,
                           ),
                           const SizedBox(height: 10),
                           Text(

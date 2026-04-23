@@ -146,22 +146,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         _refreshChatSessions(),
         _loadCredits(),
       ]);
-      // 기존 세션이 있으면 가장 최근 것 자동 로드 (이어 채팅)
-      if (_chatSessions.isNotEmpty) {
-        final mostRecent = _chatSessions.first;
-        final id = mostRecent['id'] as String?;
-        if (id != null) {
-          _sessionId = id;
-          try {
-            final history = await _api.getChatHistory(id);
-            setState(() => _messages = history);
-          } catch (_) {
-            // history 로드 실패해도 빈 채팅으로 계속 진행
-          }
-        }
-      }
-      // 세션이 하나도 없으면 _sessionId == null로 두고, 첫 메시지 전송 시 생성
-      debugPrint('=== chat init done: sessionId=$_sessionId, sessions=${_chatSessions.length}');
+      // 진입 시에는 항상 빈 상태(환영 카드)로 시작 — 이전 세션은 사이드바에서 선택
+      debugPrint('=== chat init done: sessions=${_chatSessions.length}');
     } catch (e) {
       debugPrint('=== chat init failed: $e');
       setState(() => _error = '채팅을 시작할 수 없습니다.');
@@ -205,6 +191,211 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     }
   }
 
+  /// 드로어 등 상위 레이어 위에 보이는 플로팅 토스트 (루트 오버레이 사용)
+  void _showFloatingToast(String message, {bool isError = false}) {
+    final overlay = Overlay.of(context, rootOverlay: true);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) {
+        final bottomPad = MediaQuery.of(ctx).padding.bottom;
+        return Positioned(
+          left: 24,
+          right: 24,
+          bottom: bottomPad + 32,
+          child: Material(
+            color: Colors.transparent,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: (isError ? kErrorColor : kCosmicNavy)
+                        .withOpacity(0.92),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: kGlassBorder, width: 0.6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isError ? Icons.error_outline : Icons.check_circle,
+                        color: isError ? kDark : kGold,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: const TextStyle(
+                              color: kDark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
+
+  Future<void> _togglePinSession(String id, bool pin) async {
+    try {
+      await _api.updateChatSession(widget.profileId, id, pinned: pin);
+    } catch (e) {
+      if (mounted) {
+        _showFloatingToast('고정 상태 변경 실패: $e', isError: true);
+      }
+      return;
+    }
+    // Optimistic local update
+    setState(() {
+      _chatSessions = _chatSessions.map((s) {
+        if (s['id'] == id) return {...s, 'pinned': pin};
+        return s;
+      }).toList();
+    });
+    if (mounted) {
+      _showFloatingToast(pin ? '채팅을 고정했습니다' : '고정을 해제했습니다');
+    }
+    try {
+      await _refreshChatSessions();
+    } catch (_) {}
+  }
+
+  Future<void> _renameSessionDialog(String id, String currentTitle) async {
+    final ctrl = TextEditingController(text: currentTitle);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kCosmicNavy.withOpacity(0.96),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: kGlassBorder, width: 0.6),
+        ),
+        title: const Text('이름 바꾸기',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 40,
+          style: const TextStyle(color: kDark, fontSize: 14),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0x0AFFFFFF),
+            counterStyle: const TextStyle(color: kTextMuted, fontSize: 11),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kGlassBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: kGold),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소', style: TextStyle(color: kTextMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('저장',
+                style: TextStyle(color: kGold, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (newTitle == null || newTitle.isEmpty || newTitle == currentTitle) return;
+    try {
+      await _api.updateChatSession(widget.profileId, id, title: newTitle);
+    } catch (e) {
+      if (mounted) {
+        _showFloatingToast('이름 변경 실패: $e', isError: true);
+      }
+      return;
+    }
+    // Optimistic local update
+    setState(() {
+      _chatSessions = _chatSessions.map((s) {
+        if (s['id'] == id) return {...s, 'title': newTitle};
+        return s;
+      }).toList();
+    });
+    if (mounted) _showFloatingToast('이름을 변경했습니다');
+    try {
+      await _refreshChatSessions();
+    } catch (_) {}
+  }
+
+  Future<void> _deleteSessionConfirm(String id, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: kCosmicNavy.withOpacity(0.96),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: kGlassBorder, width: 0.6),
+        ),
+        title: const Text('채팅 삭제',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
+        content: Text(
+          '"$title" 채팅을 삭제하시겠습니까?\n삭제된 채팅은 복구할 수 없습니다.',
+          style: const TextStyle(color: kTextMuted, fontSize: 13, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소', style: TextStyle(color: kTextMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제',
+                style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _api.deleteChatSession(widget.profileId, id);
+    } catch (e) {
+      if (mounted) {
+        _showFloatingToast('채팅 삭제 실패: $e', isError: true);
+      }
+      return;
+    }
+    if (_sessionId == id) {
+      setState(() {
+        _sessionId = null;
+        _messages = [];
+      });
+    }
+    // Optimistic local removal so the deleted tile disappears even if the
+    // server list refresh below fails (e.g. pending migration).
+    setState(() {
+      _chatSessions = _chatSessions.where((s) => s['id'] != id).toList();
+    });
+    if (mounted) _showFloatingToast('채팅이 삭제되었습니다');
+    // Best-effort refresh; ignore failures here since delete already succeeded.
+    try {
+      await _refreshChatSessions();
+    } catch (_) {}
+  }
+
   /// 새 채팅 시작 — 세션은 첫 메시지 보낼 때 lazy 생성
   void _startNewSession() {
     setState(() {
@@ -214,6 +405,13 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     });
   }
 
+  /// 첫 유저 메시지로부터 세션 제목을 생성 (최대 30자, 한 줄)
+  String _buildAutoTitle(String firstMessage) {
+    final singleLine = firstMessage.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (singleLine.length <= 30) return singleLine;
+    return '${singleLine.substring(0, 30)}…';
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageCtrl.text.trim();
     debugPrint('=== _sendMessage called: text=${text.length} chars, sessionId=$_sessionId, sending=$_sending');
@@ -221,6 +419,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       debugPrint('=== _sendMessage early return');
       return;
     }
+
+    final isFirstMessage = _sessionId == null;
 
     _messageCtrl.clear();
     setState(() {
@@ -268,6 +468,15 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       setState(() {
         _messages.add(ChatMessage(role: 'assistant', content: reply));
       });
+      // 첫 메시지였다면 사용자 발화로 세션 제목을 자동 생성
+      if (isFirstMessage && _sessionId != null) {
+        final autoTitle = _buildAutoTitle(text);
+        try {
+          await _api.updateChatSession(widget.profileId, _sessionId!, title: autoTitle);
+        } catch (e) {
+          debugPrint('=== auto title set failed: $e');
+        }
+      }
       // 첫 답장 후 세션 목록 새로고침 (제목/정렬 갱신)
       _refreshChatSessions();
     } catch (e, stack) {
@@ -322,6 +531,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
               'AI 상담',
@@ -329,12 +539,13 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: kDark,
+                height: 1.0,
               ),
             ),
             if (_tokensRemaining != null) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _creditColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -349,15 +560,17 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.bolt, size: 10, color: _creditColor),
+                    Icon(Icons.bolt, size: 11, color: _creditColor),
                     const SizedBox(width: 3),
                     Text(
                       '$_tokensRemaining 크래딧',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         color: _creditColor,
                         fontWeight: FontWeight.w700,
+                        height: 1.0,
                       ),
                     ),
                   ],
@@ -537,24 +750,25 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
                           itemCount: _chatSessions.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          separatorBuilder: (_, __) => const SizedBox(height: 4),
                           itemBuilder: (context, i) {
                             final s = _chatSessions[i];
                             final id = s['id'] as String? ?? '';
                             final title = (s['title'] as String?) ?? '대화';
-                            final count = (s['messageCount'] as num?)?.toInt() ?? 0;
-                            final updatedAt = s['updatedAt'] as String?;
+                            final pinned = (s['pinned'] as bool?) ?? false;
                             final isCurrent = id == _sessionId;
                             // 현재 세션은 위쪽 indicator에서 보여주므로 리스트에서 제외
                             if (isCurrent) return const SizedBox.shrink();
                             return _ChatSessionTile(
                               title: title,
-                              messageCount: count,
-                              updatedAt: updatedAt,
+                              pinned: pinned,
                               onTap: () {
                                 Navigator.pop(context);
                                 _loadSession(id);
                               },
+                              onPin: () => _togglePinSession(id, !pinned),
+                              onRename: () => _renameSessionDialog(id, title),
+                              onDelete: () => _deleteSessionConfirm(id, title),
                             );
                           },
                         ),
@@ -681,7 +895,11 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   Widget _messageBubble(ChatMessage msg) {
     final isUser = msg.isUser;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(
+        bottom: 12,
+        left: isUser ? 56 : 0,
+        right: isUser ? 0 : 56,
+      ),
       child: Row(
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -752,7 +970,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
 
   Widget _typingBubble() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 12, right: 56),
       child: Row(
         children: [
           _commandAvatar(),
@@ -876,35 +1094,122 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 }
 
+/// "..." 버튼 + 고정/이름바꾸기/삭제 플로팅 메뉴
+class _SessionMoreButton extends StatelessWidget {
+  final bool pinned;
+  final VoidCallback onPin;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
+
+  const _SessionMoreButton({
+    required this.pinned,
+    required this.onPin,
+    required this.onRename,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: PopupMenuButton<String>(
+      tooltip: '',
+      icon: Icon(Icons.more_horiz,
+          color: kDark.withOpacity(0.5), size: 18),
+      padding: EdgeInsets.zero,
+      iconSize: 18,
+      splashRadius: 14,
+      color: kCosmicNavy.withOpacity(0.96),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: kGlassBorder, width: 0.6),
+      ),
+      position: PopupMenuPosition.under,
+      onSelected: (v) {
+        switch (v) {
+          case 'pin':
+            onPin();
+            break;
+          case 'rename':
+            onRename();
+            break;
+          case 'delete':
+            onDelete();
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem<String>(
+          value: 'pin',
+          height: 40,
+          child: Row(
+            children: [
+              Icon(pinned ? Icons.push_pin_outlined : Icons.push_pin,
+                  size: 16, color: kDark),
+              const SizedBox(width: 10),
+              Text(pinned ? '고정 해제' : '고정하기',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: kDark,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'rename',
+          height: 40,
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 16, color: kDark),
+              SizedBox(width: 10),
+              Text('이름 바꾸기',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: kDark,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          height: 40,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 16, color: kErrorColor),
+              SizedBox(width: 10),
+              Text('삭제',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: kErrorColor,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+}
+
 /// 채팅 세션 리스트 타일 (드로어용)
 class _ChatSessionTile extends StatelessWidget {
   final String title;
-  final int messageCount;
-  final String? updatedAt;
+  final bool pinned;
   final VoidCallback onTap;
+  final VoidCallback onPin;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
 
   const _ChatSessionTile({
     required this.title,
-    required this.messageCount,
-    required this.updatedAt,
+    required this.pinned,
     required this.onTap,
+    required this.onPin,
+    required this.onRename,
+    required this.onDelete,
   });
-
-  String _formatDate(String? iso) {
-    if (iso == null) return '';
-    try {
-      final dt = DateTime.parse(iso).toLocal();
-      final now = DateTime.now();
-      final diff = now.difference(dt);
-      if (diff.inMinutes < 1) return '방금';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
-      if (diff.inHours < 24) return '${diff.inHours}시간 전';
-      if (diff.inDays < 7) return '${diff.inDays}일 전';
-      return '${dt.year}.${dt.month.toString().padLeft(2, "0")}.${dt.day.toString().padLeft(2, "0")}';
-    } catch (_) {
-      return '';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -914,7 +1219,7 @@ class _ChatSessionTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.fromLTRB(12, 4, 2, 4),
           decoration: BoxDecoration(
             color: const Color(0x0AFFFFFF),
             borderRadius: BorderRadius.circular(10),
@@ -922,54 +1227,28 @@ class _ChatSessionTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.chat_bubble_outline,
-                color: kDark.withOpacity(0.6), size: 16),
-              const SizedBox(width: 10),
+              if (pinned) ...[
+                const Icon(Icons.push_pin, size: 12, color: kGold),
+                const SizedBox(width: 6),
+              ],
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: kDark,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          '$messageCount개 메시지',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: kDark.withOpacity(0.4),
-                          ),
-                        ),
-                        if (updatedAt != null) ...[
-                          Text(' · ',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: kDark.withOpacity(0.3),
-                            )),
-                          Text(
-                            _formatDate(updatedAt),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: kDark.withOpacity(0.4),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: kDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(Icons.chevron_right,
-                color: kDark.withOpacity(0.3), size: 16),
+              _SessionMoreButton(
+                pinned: pinned,
+                onPin: onPin,
+                onRename: onRename,
+                onDelete: onDelete,
+              ),
             ],
           ),
         ),

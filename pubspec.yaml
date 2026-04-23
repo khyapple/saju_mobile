@@ -39,3 +39,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+    - family: ShillaCulture
+      fonts:
+        - asset: assets/fonts/Shilla_Culture_B.ttf
+          weight: 700
