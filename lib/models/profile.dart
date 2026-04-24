@@ -1,3 +1,5 @@
+import '../l10n/app_localizations.dart';
+
 class Profile {
   final String id;
   final String name;
@@ -55,16 +57,16 @@ class Profile {
     );
   }
 
-  String get displayBirthDate {
-    if (birthDate == null) return '날짜 미입력';
-    final parts = birthDate!.split('-');
-    if (parts.length != 3) return birthDate!;
-    return '${parts[0]}년 ${parts[1]}월 ${parts[2]}일';
+  /// Locale-aware birth date display, e.g. "1990년 5월 12일" / "May 12, 1990".
+  String formattedBirthDate(AppLocalizations l10n) {
+    if (birthDate == null) return l10n.noBirthDate;
+    return l10n.formatBirthDateIso(birthDate!);
   }
 
-  String get displayGender {
+  /// Locale-aware gender display.
+  String formattedGender(AppLocalizations l10n) {
     if (gender == null) return '';
-    return gender == 'male' ? '남성' : '여성';
+    return gender == 'male' ? l10n.male : l10n.female;
   }
 
   Profile copyWith({Map<String, dynamic>? chartData}) {

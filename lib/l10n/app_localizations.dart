@@ -143,6 +143,94 @@ class AppLocalizations {
   String get privacyPolicy => _t('privacyPolicy');
   String get termsOfService => _t('termsOfService');
 
+  // ─── Notifications Sheet ──────────────────────────────────────
+  String get notifReminderEventTime => _t('notifReminderEventTime');
+  String get notifReminderEventTitle => _t('notifReminderEventTitle');
+  String get notifReminderEventSubtitle => _t('notifReminderEventSubtitle');
+  String get notifReminderFortuneTime => _t('notifReminderFortuneTime');
+  String get notifReminderFortuneTitle => _t('notifReminderFortuneTitle');
+  String get notifReminderFortuneSubtitle => _t('notifReminderFortuneSubtitle');
+  String get notifChannelOff => _t('notifChannelOff');
+  String get notifChannelPush => _t('notifChannelPush');
+  String get notifChannelEmail => _t('notifChannelEmail');
+  String get notifChannelBoth => _t('notifChannelBoth');
+
+  // ─── Birth hours & date formatting ─────────────────────────────
+
+  /// 12 Earthly-Branch hours as (name, shortRange, value).
+  /// e.g. Korean: ('자시', '23~01시', '23'); English: ('Rat', '23:00–01:00', '23').
+  List<(String, String, String)> get birthHourList =>
+      locale.languageCode == 'en' ? _birthHoursEn : _birthHoursKo;
+
+  /// Long-form range like '23:00~01:00' (ko) or '23:00–01:00' (en).
+  String _hourRangeLong(String value) {
+    final i = int.tryParse(value);
+    if (i == null) return '';
+    final end = (i + 2) % 24;
+    String pad(int v) => v.toString().padLeft(2, '0');
+    final dash = locale.languageCode == 'en' ? '–' : '~';
+    return '${pad(i)}:00$dash${pad(end)}:00';
+  }
+
+  /// Display like "자시 (23:00~01:00)" (ko) or "Rat (23:00–01:00)" (en).
+  /// Returns null if no matching hour is found.
+  String? birthHourDisplay(String? hourValue) {
+    if (hourValue == null) return null;
+    final padded = hourValue.padLeft(2, '0');
+    for (final h in birthHourList) {
+      if (h.$3 == padded) return '${h.$1} (${_hourRangeLong(padded)})';
+    }
+    return null;
+  }
+
+  /// Format (year, month, day) — "1990년 5월 12일" (ko) / "May 12, 1990" (en).
+  String formatBirthDate(int year, int month, int day) {
+    if (locale.languageCode == 'en') {
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+      ];
+      final m = (month >= 1 && month <= 12) ? months[month - 1] : '$month';
+      return '$m $day, $year';
+    }
+    return '$year년 $month월 $day일';
+  }
+
+  /// Same as [formatBirthDate] but takes an ISO `YYYY-MM-DD` string.
+  String formatBirthDateIso(String iso) {
+    final parts = iso.split('-');
+    if (parts.length != 3) return iso;
+    final y = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    final d = int.tryParse(parts[2]);
+    if (y == null || m == null || d == null) return iso;
+    return formatBirthDate(y, m, d);
+  }
+
+  /// "19시생" (ko) / "Born at 19:00" (en).
+  String bornAtHour(String hour) {
+    if (locale.languageCode == 'en') return 'Born at $hour:00';
+    return '$hour시생';
+  }
+
+  /// Empty date placeholder, e.g. when birth date is missing.
+  String get noBirthDate => _t('noBirthDate');
+
+  // ─── Onboarding ───────────────────────────────────────────────
+  String get onboardingTagline => _t('onboardingTagline');
+  String get onboardingFeatureCalcTitle => _t('onboardingFeatureCalcTitle');
+  String get onboardingFeatureCalcDesc => _t('onboardingFeatureCalcDesc');
+  String get onboardingFeatureAiTitle => _t('onboardingFeatureAiTitle');
+  String get onboardingFeatureAiDesc => _t('onboardingFeatureAiDesc');
+  String get onboardingFeatureElementsTitle => _t('onboardingFeatureElementsTitle');
+  String get onboardingFeatureElementsDesc => _t('onboardingFeatureElementsDesc');
+  String get getStarted => _t('getStarted');
+  String get basicInfo => _t('basicInfo');
+  String get basicInfoDesc => _t('basicInfoDesc');
+  String get knowExactly => _t('knowExactly');
+  String get knowRoughly => _t('knowRoughly');
+  String get startAnalysisAction => _t('startAnalysisAction');
+
   // ─── Profiles ─────────────────────────────────────────────────
   String helloUser(String name) => _t('helloUser').replaceAll('{name}', name);
   String get mySajuProfile => _t('mySajuProfile');
@@ -254,6 +342,23 @@ class AppLocalizations {
   String get chatEmptyHint => _t('chatEmptyHint');
   String messagesCount(int n) => _t('messagesCount').replaceAll('{n}', '$n');
   String get conversation => _t('conversation');
+  String get newChat => _t('newChat');
+  String get renameChat => _t('renameChat');
+  String get deleteChat => _t('deleteChat');
+  String deleteChatConfirm(String title) =>
+      _t('deleteChatConfirm').replaceAll('{title}', title);
+  String get pin => _t('pin');
+  String get unpin => _t('unpin');
+  String get chatPinned => _t('chatPinned');
+  String get chatUnpinned => _t('chatUnpinned');
+  String get pinFailedPrefix => _t('pinFailedPrefix');
+  String get renameFailedPrefix => _t('renameFailedPrefix');
+  String get nameChangedOk => _t('nameChangedOk');
+  String get deleteChatFailedPrefix => _t('deleteChatFailedPrefix');
+  String get chatDeletedOk => _t('chatDeletedOk');
+  String get sessionStartFailedPrefix => _t('sessionStartFailedPrefix');
+  String get errorPrefix => _t('errorPrefix');
+  String creditsCount(int n) => _t('creditsCount').replaceAll('{n}', '$n');
 
   // ─── Compatibility ────────────────────────────────────────────
   String get compatibilityTitle => _t('compatibilityTitle');
@@ -262,8 +367,19 @@ class AppLocalizations {
   String get compatibilityType => _t('compatibilityType');
   String get typeLove => _t('typeLove');
   String get typeMarriage => _t('typeMarriage');
+  String get typeFamily => _t('typeFamily');
   String get typeBusiness => _t('typeBusiness');
   String get typeFriendship => _t('typeFriendship');
+  String startCompatAnalysis(String type) =>
+      _t('startCompatAnalysis').replaceAll('{type}', type);
+  String compatSubtitleOf(String type) =>
+      _t('compatSubtitleOf').replaceAll('{type}', type);
+  String get compatStartFailedPrefix => _t('compatStartFailedPrefix');
+  String get compatPromptLove => _t('compatPromptLove');
+  String get compatPromptMarriage => _t('compatPromptMarriage');
+  String get compatPromptFamily => _t('compatPromptFamily');
+  String get compatPromptBusiness => _t('compatPromptBusiness');
+  String get compatPromptFriendship => _t('compatPromptFriendship');
   String get selectDifferentProfiles => _t('selectDifferentProfiles');
   String get analyzing => _t('analyzing');
   String get startAnalysis => _t('startAnalysis');
@@ -294,6 +410,38 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
+
+// ─── Birth Hour Tables ────────────────────────────────────────────────────────
+
+const _birthHoursKo = <(String, String, String)>[
+  ('자시', '23~01시', '23'),
+  ('축시', '01~03시', '01'),
+  ('인시', '03~05시', '03'),
+  ('묘시', '05~07시', '05'),
+  ('진시', '07~09시', '07'),
+  ('사시', '09~11시', '09'),
+  ('오시', '11~13시', '11'),
+  ('미시', '13~15시', '13'),
+  ('신시', '15~17시', '15'),
+  ('유시', '17~19시', '17'),
+  ('술시', '19~21시', '19'),
+  ('해시', '21~23시', '21'),
+];
+
+const _birthHoursEn = <(String, String, String)>[
+  ('Rat', '23–01', '23'),
+  ('Ox', '01–03', '01'),
+  ('Tiger', '03–05', '03'),
+  ('Rabbit', '05–07', '05'),
+  ('Dragon', '07–09', '07'),
+  ('Snake', '09–11', '09'),
+  ('Horse', '11–13', '11'),
+  ('Goat', '13–15', '13'),
+  ('Monkey', '15–17', '15'),
+  ('Rooster', '17–19', '17'),
+  ('Dog', '19–21', '19'),
+  ('Pig', '21–23', '21'),
+];
 
 // ─── String Tables ────────────────────────────────────────────────────────────
 
@@ -407,6 +555,32 @@ const _strings = <String, Map<String, String>>{
     'helpCategoryUsage': '앱 사용법',
     'privacyPolicy': '개인정보 처리방침',
     'termsOfService': '서비스 이용약관',
+    // Notifications
+    'notifReminderEventTime': '오후 8:00',
+    'notifReminderEventTitle': '오늘 하루 어땠나요?',
+    'notifReminderEventSubtitle': '저녁 8시에 오늘의 이벤트를 작성하도록 알려드려요.',
+    'notifReminderFortuneTime': '오전 9:30',
+    'notifReminderFortuneTitle': '오늘의 운세',
+    'notifReminderFortuneSubtitle': '아침 9시 30분에 오늘의 운세를 알려드려요.',
+    'notifChannelOff': '끄기',
+    'notifChannelPush': '푸시',
+    'notifChannelEmail': '이메일',
+    'notifChannelBoth': '모두',
+    // Onboarding
+    'onboardingTagline': 'AI가 당신의 사주를 분석해\n삶의 흐름을 알려드립니다.',
+    'onboardingFeatureCalcTitle': '정확한 사주 계산',
+    'onboardingFeatureCalcDesc': '만세력 기반 정밀 계산',
+    'onboardingFeatureAiTitle': 'AI 해석',
+    'onboardingFeatureAiDesc': '클로드 AI가 상세히 분석',
+    'onboardingFeatureElementsTitle': '오행 분석',
+    'onboardingFeatureElementsDesc': '목화토금수 균형 파악',
+    'getStarted': '시작하기',
+    'basicInfo': '기본 정보 입력',
+    'basicInfoDesc': '사주 분석을 위해 정확한 정보를 입력해주세요',
+    'knowExactly': '정확히 앎',
+    'knowRoughly': '대략 앎',
+    'startAnalysisAction': '분석 시작',
+    'noBirthDate': '날짜 미입력',
     // Profiles
     'helloUser': '안녕하세요, {name}님',
     'mySajuProfile': '나의 사주 프로필 →',
@@ -515,6 +689,22 @@ const _strings = <String, Map<String, String>>{
     'chatEmptyHint': '사주에 대해 궁금한 것을\n무엇이든 물어보세요.',
     'messagesCount': '{n}개 메시지',
     'conversation': '대화',
+    'newChat': '새 채팅',
+    'renameChat': '이름 바꾸기',
+    'deleteChat': '채팅 삭제',
+    'deleteChatConfirm': '"{title}" 채팅을 삭제하시겠습니까?\n삭제된 채팅은 복구할 수 없습니다.',
+    'pin': '고정하기',
+    'unpin': '고정 해제',
+    'chatPinned': '채팅을 고정했습니다',
+    'chatUnpinned': '고정을 해제했습니다',
+    'pinFailedPrefix': '고정 상태 변경 실패',
+    'renameFailedPrefix': '이름 변경 실패',
+    'nameChangedOk': '이름을 변경했습니다',
+    'deleteChatFailedPrefix': '채팅 삭제 실패',
+    'chatDeletedOk': '채팅이 삭제되었습니다',
+    'sessionStartFailedPrefix': '채팅 세션을 시작할 수 없습니다',
+    'errorPrefix': '오류',
+    'creditsCount': '{n} 크래딧',
     // Compatibility
     'compatibilityTitle': '궁합 분석',
     'first': '첫 번째',
@@ -522,8 +712,17 @@ const _strings = <String, Map<String, String>>{
     'compatibilityType': '궁합 유형',
     'typeLove': '연애',
     'typeMarriage': '결혼',
+    'typeFamily': '가족',
     'typeBusiness': '사업',
     'typeFriendship': '우정',
+    'startCompatAnalysis': '{type}궁합 분석 시작',
+    'compatSubtitleOf': '{type} 궁합',
+    'compatStartFailedPrefix': '궁합 분석을 시작할 수 없습니다',
+    'compatPromptLove': '두 사람의 연애궁합을 사주를 기반으로 상세히 분석해주세요.',
+    'compatPromptMarriage': '두 사람의 결혼궁합을 사주를 기반으로 상세히 분석해주세요.',
+    'compatPromptFamily': '두 사람의 가족궁합(부모-자식 또는 형제자매 관계)을 사주를 기반으로 상세히 분석해주세요. 특히 소통 방식, 갈등 요인, 서로 맞춰가는 법에 집중해주세요.',
+    'compatPromptBusiness': '두 사람의 사업궁합을 사주를 기반으로 상세히 분석해주세요.',
+    'compatPromptFriendship': '두 사람의 우정궁합을 사주를 기반으로 상세히 분석해주세요.',
     'selectDifferentProfiles': '서로 다른 프로필을 선택해주세요.',
     'analyzing': '분석 중...',
     'startAnalysis': '궁합 분석 시작',
@@ -647,6 +846,32 @@ const _strings = <String, Map<String, String>>{
     'helpCategoryUsage': 'Using the App',
     'privacyPolicy': 'Privacy Policy',
     'termsOfService': 'Terms of Service',
+    // Notifications
+    'notifReminderEventTime': '8:00 PM',
+    'notifReminderEventTitle': 'How was your day?',
+    'notifReminderEventSubtitle': "We'll remind you at 8 PM to log today's events.",
+    'notifReminderFortuneTime': '9:30 AM',
+    'notifReminderFortuneTitle': "Today's Fortune",
+    'notifReminderFortuneSubtitle': "We'll share today's fortune at 9:30 AM.",
+    'notifChannelOff': 'Off',
+    'notifChannelPush': 'Push',
+    'notifChannelEmail': 'Email',
+    'notifChannelBoth': 'Both',
+    // Onboarding
+    'onboardingTagline': "AI will analyze your Saju\nand reveal the flow of your life.",
+    'onboardingFeatureCalcTitle': 'Accurate Saju calculation',
+    'onboardingFeatureCalcDesc': 'Precise math based on the Manseryeok',
+    'onboardingFeatureAiTitle': 'AI reading',
+    'onboardingFeatureAiDesc': 'Detailed analysis by Claude AI',
+    'onboardingFeatureElementsTitle': 'Five Elements analysis',
+    'onboardingFeatureElementsDesc': 'See how Wood/Fire/Earth/Metal/Water balance',
+    'getStarted': 'Get started',
+    'basicInfo': 'Basic information',
+    'basicInfoDesc': 'Please enter accurate info for your Saju analysis',
+    'knowExactly': 'Know exactly',
+    'knowRoughly': 'Approximate',
+    'startAnalysisAction': 'Start analysis',
+    'noBirthDate': 'No date',
     // Profiles
     'helloUser': 'Hello, {name}',
     'mySajuProfile': 'My Saju Profile →',
@@ -755,6 +980,22 @@ const _strings = <String, Map<String, String>>{
     'chatEmptyHint': 'Ask me anything\nabout your Saju.',
     'messagesCount': '{n} messages',
     'conversation': 'Chat',
+    'newChat': 'New chat',
+    'renameChat': 'Rename',
+    'deleteChat': 'Delete chat',
+    'deleteChatConfirm': 'Delete the chat "{title}"?\nThis cannot be undone.',
+    'pin': 'Pin',
+    'unpin': 'Unpin',
+    'chatPinned': 'Chat pinned',
+    'chatUnpinned': 'Chat unpinned',
+    'pinFailedPrefix': 'Failed to change pin state',
+    'renameFailedPrefix': 'Rename failed',
+    'nameChangedOk': 'Name updated',
+    'deleteChatFailedPrefix': 'Delete failed',
+    'chatDeletedOk': 'Chat deleted',
+    'sessionStartFailedPrefix': "Couldn't start chat session",
+    'errorPrefix': 'Error',
+    'creditsCount': '{n} credits',
     // Compatibility
     'compatibilityTitle': 'Compatibility',
     'first': 'First',
@@ -762,8 +1003,17 @@ const _strings = <String, Map<String, String>>{
     'compatibilityType': 'Type',
     'typeLove': 'Romance',
     'typeMarriage': 'Marriage',
+    'typeFamily': 'Family',
     'typeBusiness': 'Business',
     'typeFriendship': 'Friendship',
+    'startCompatAnalysis': 'Start {type} compatibility analysis',
+    'compatSubtitleOf': '{type} compatibility',
+    'compatStartFailedPrefix': "Couldn't start compatibility analysis",
+    'compatPromptLove': "Please analyze the two people's romantic compatibility in detail based on their Saju charts.",
+    'compatPromptMarriage': "Please analyze the two people's marriage compatibility in detail based on their Saju charts.",
+    'compatPromptFamily': "Please analyze the two people's family compatibility (parent-child or sibling relationship) in detail based on their Saju charts. Focus especially on communication styles, sources of conflict, and how they adjust to each other.",
+    'compatPromptBusiness': "Please analyze the two people's business compatibility in detail based on their Saju charts.",
+    'compatPromptFriendship': "Please analyze the two people's friendship compatibility in detail based on their Saju charts.",
     'selectDifferentProfiles': 'Please select two different profiles.',
     'analyzing': 'Analyzing...',
     'startAnalysis': 'Start Analysis',

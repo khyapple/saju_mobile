@@ -14,15 +14,24 @@ class ApiService {
 
   String get _base => AppConfig.apiBaseUrl;
 
+  /// App locale ("ko" or "en"). Kept in sync by [LocaleProvider].
+  /// Sent to the backend via `Accept-Language` so generated AI content
+  /// (interpretation sections, chat replies) can match the user's language.
+  static String currentLocale = 'ko';
+
   Future<Map<String, String>> _authHeaders() async {
     final session = Supabase.instance.client.auth.currentSession;
+    final base = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept-Language': currentLocale,
+    };
     if (session == null) {
       debugPrint('=== AUTH: session is NULL - no token sent');
-      return {'Content-Type': 'application/json'};
+      return base;
     }
     debugPrint('=== AUTH: token present, expires at ${session.expiresAt}');
     return {
-      'Content-Type': 'application/json',
+      ...base,
       'Authorization': 'Bearer ${session.accessToken}',
     };
   }

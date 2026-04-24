@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/api_service.dart';
 import '../../models/chat_message.dart';
 import '../../widgets/cosmic_background.dart';
@@ -150,7 +151,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       debugPrint('=== chat init done: sessions=${_chatSessions.length}');
     } catch (e) {
       debugPrint('=== chat init failed: $e');
-      setState(() => _error = '채팅을 시작할 수 없습니다.');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() => _error = l10n.chatStartFailed);
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -185,7 +189,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       final history = await _api.getChatHistory(sessionId);
       setState(() => _messages = history);
     } catch (e) {
-      setState(() => _error = '채팅 기록을 불러올 수 없습니다.');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() => _error = l10n.cannotLoadHistory);
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -250,11 +257,12 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   Future<void> _togglePinSession(String id, bool pin) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await _api.updateChatSession(widget.profileId, id, pinned: pin);
     } catch (e) {
       if (mounted) {
-        _showFloatingToast('고정 상태 변경 실패: $e', isError: true);
+        _showFloatingToast('${l10n.pinFailedPrefix}: $e', isError: true);
       }
       return;
     }
@@ -266,7 +274,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       }).toList();
     });
     if (mounted) {
-      _showFloatingToast(pin ? '채팅을 고정했습니다' : '고정을 해제했습니다');
+      _showFloatingToast(pin ? l10n.chatPinned : l10n.chatUnpinned);
     }
     try {
       await _refreshChatSessions();
@@ -274,17 +282,20 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   Future<void> _renameSessionDialog(String id, String currentTitle) async {
+    final l10n = AppLocalizations.of(context);
     final ctrl = TextEditingController(text: currentTitle);
     final newTitle = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) {
+        final l10nCtx = AppLocalizations.of(ctx);
+        return AlertDialog(
         backgroundColor: kCosmicNavy.withOpacity(0.96),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: kGlassBorder, width: 0.6),
         ),
-        title: const Text('이름 바꾸기',
-            style: TextStyle(
+        title: Text(l10nCtx.renameChat,
+            style: const TextStyle(
                 fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
         content: TextField(
           controller: ctrl,
@@ -308,22 +319,23 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: kTextMuted)),
+            child: Text(l10nCtx.cancel, style: const TextStyle(color: kTextMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('저장',
-                style: TextStyle(color: kGold, fontWeight: FontWeight.w700)),
+            child: Text(l10nCtx.save,
+                style: const TextStyle(color: kGold, fontWeight: FontWeight.w700)),
           ),
         ],
-      ),
+        );
+      },
     );
     if (newTitle == null || newTitle.isEmpty || newTitle == currentTitle) return;
     try {
       await _api.updateChatSession(widget.profileId, id, title: newTitle);
     } catch (e) {
       if (mounted) {
-        _showFloatingToast('이름 변경 실패: $e', isError: true);
+        _showFloatingToast('${l10n.renameFailedPrefix}: $e', isError: true);
       }
       return;
     }
@@ -334,47 +346,51 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         return s;
       }).toList();
     });
-    if (mounted) _showFloatingToast('이름을 변경했습니다');
+    if (mounted) _showFloatingToast(l10n.nameChangedOk);
     try {
       await _refreshChatSessions();
     } catch (_) {}
   }
 
   Future<void> _deleteSessionConfirm(String id, String title) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) {
+        final l10nCtx = AppLocalizations.of(ctx);
+        return AlertDialog(
         backgroundColor: kCosmicNavy.withOpacity(0.96),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: kGlassBorder, width: 0.6),
         ),
-        title: const Text('채팅 삭제',
-            style: TextStyle(
+        title: Text(l10nCtx.deleteChat,
+            style: const TextStyle(
                 fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
         content: Text(
-          '"$title" 채팅을 삭제하시겠습니까?\n삭제된 채팅은 복구할 수 없습니다.',
+          l10nCtx.deleteChatConfirm(title),
           style: const TextStyle(color: kTextMuted, fontSize: 13, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소', style: TextStyle(color: kTextMuted)),
+            child: Text(l10nCtx.cancel, style: const TextStyle(color: kTextMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('삭제',
-                style: TextStyle(color: kErrorColor, fontWeight: FontWeight.w700)),
+            child: Text(l10nCtx.delete,
+                style: const TextStyle(color: kErrorColor, fontWeight: FontWeight.w700)),
           ),
         ],
-      ),
+        );
+      },
     );
     if (confirmed != true) return;
     try {
       await _api.deleteChatSession(widget.profileId, id);
     } catch (e) {
       if (mounted) {
-        _showFloatingToast('채팅 삭제 실패: $e', isError: true);
+        _showFloatingToast('${l10n.deleteChatFailedPrefix}: $e', isError: true);
       }
       return;
     }
@@ -389,7 +405,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     setState(() {
       _chatSessions = _chatSessions.where((s) => s['id'] != id).toList();
     });
-    if (mounted) _showFloatingToast('채팅이 삭제되었습니다');
+    if (mounted) _showFloatingToast(l10n.chatDeletedOk);
     // Best-effort refresh; ignore failures here since delete already succeeded.
     try {
       await _refreshChatSessions();
@@ -438,10 +454,11 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         debugPrint('=== chat session lazy-created: $_sessionId');
       } catch (e) {
         debugPrint('=== lazy session creation failed: $e');
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _messages.add(ChatMessage(
             role: 'assistant',
-            content: '채팅 세션을 시작할 수 없습니다: $e',
+            content: '${l10n.sessionStartFailedPrefix}: $e',
           ));
           _sending = false;
         });
@@ -482,12 +499,15 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     } catch (e, stack) {
       debugPrint('=== sendMessage exception: $e');
       debugPrint('=== stack: $stack');
-      setState(() {
-        _messages.add(ChatMessage(
-          role: 'assistant',
-          content: '오류: $e',
-        ));
-      });
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        setState(() {
+          _messages.add(ChatMessage(
+            role: 'assistant',
+            content: '${l10n.errorPrefix}: $e',
+          ));
+        });
+      }
     } finally {
       setState(() => _sending = false);
       _scrollToBottom();
@@ -518,6 +538,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
@@ -533,9 +554,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              'AI 상담',
-              style: TextStyle(
+            Text(
+              l10n.aiConsultationTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: kDark,
@@ -565,7 +586,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     Icon(Icons.bolt, size: 11, color: _creditColor),
                     const SizedBox(width: 3),
                     Text(
-                      '$_tokensRemaining 크래딧',
+                      l10n.creditsCount(_tokensRemaining!),
                       style: TextStyle(
                         fontSize: 11,
                         color: _creditColor,
@@ -583,7 +604,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           Builder(
             builder: (ctx) => IconButton(
               icon: const Icon(Icons.history, color: kDark),
-              tooltip: '채팅 기록',
+              tooltip: l10n.chatHistory,
               onPressed: () => Scaffold.of(ctx).openEndDrawer(),
             ),
           ),
@@ -605,8 +626,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: _initSession,
-                          child: const Text('다시 시도',
-                              style: TextStyle(color: kGold)),
+                          child: Text(l10n.retry,
+                              style: const TextStyle(color: kGold)),
                         ),
                       ],
                     ),
@@ -645,6 +666,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   Widget _chatHistoryDrawer() {
+    final l10n = AppLocalizations.of(context);
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -659,9 +681,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        '채팅 기록',
-                        style: TextStyle(
+                      Text(
+                        l10n.chatHistory,
+                        style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: kDark),
@@ -669,7 +691,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline,
                             color: kGold),
-                        tooltip: '새 채팅',
+                        tooltip: l10n.newChat,
                         onPressed: () {
                           Navigator.pop(context);
                           _startNewSession();
@@ -700,7 +722,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                                 ? _messages.first.content.length > 30
                                     ? '${_messages.first.content.substring(0, 30)}...'
                                     : _messages.first.content
-                                : '현재 대화',
+                                : l10n.currentConversation,
                             style:
                                 const TextStyle(fontSize: 13, color: kDark),
                             maxLines: 1,
@@ -714,8 +736,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                             color: kGold,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text('현재',
-                              style: TextStyle(
+                          child: Text(l10n.current,
+                              style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                   color: kInk)),
@@ -735,10 +757,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                                 Icon(Icons.forum_outlined,
                                     color: kTextMuted.withOpacity(0.4), size: 40),
                                 const SizedBox(height: 12),
-                                const Text(
-                                  '아직 다른 채팅 기록이 없어요\n상단 + 버튼으로 새 채팅을 시작하세요',
+                                Text(
+                                  l10n.noChatHistory,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 13,
                                       color: kTextMuted,
                                       height: 1.5),
@@ -754,7 +776,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                           itemBuilder: (context, i) {
                             final s = _chatSessions[i];
                             final id = s['id'] as String? ?? '';
-                            final title = (s['title'] as String?) ?? '대화';
+                            final title = (s['title'] as String?) ?? l10n.conversation;
                             final pinned = (s['pinned'] as bool?) ?? false;
                             final isCurrent = id == _sessionId;
                             // 현재 세션은 위쪽 indicator에서 보여주므로 리스트에서 제외
@@ -782,6 +804,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   Widget _emptyState() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.only(
@@ -812,16 +835,16 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 child: Image.asset('assets/images/logo.png', height: 36),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'AI 사주 상담',
-                style: TextStyle(
+              Text(
+                l10n.aiConsultation,
+                style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: kDark),
               ),
               const SizedBox(height: 8),
               Text(
-                '사주에 대해 궁금한 것을\n무엇이든 물어보세요.',
+                l10n.chatEmptyHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 14,
@@ -830,9 +853,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               ),
               const SizedBox(height: 24),
               ...[
-                '올해 운세가 어떤가요?',
-                '적성에 맞는 직업은?',
-                '연애운을 알려주세요',
+                l10n.suggestFortune,
+                l10n.suggestCareer,
+                l10n.suggestLove,
               ].map((q) => GestureDetector(
                     onTap: () {
                       _messageCtrl.text = q;
@@ -1013,6 +1036,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   Widget _inputBar() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 8, 16, MediaQuery.of(context).padding.bottom + 8),
@@ -1031,7 +1055,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                   onSubmitted: (_) => _sendMessage(),
                   style: const TextStyle(fontSize: 14, color: kDark),
                   decoration: InputDecoration(
-                    hintText: '질문을 입력하세요...',
+                    hintText: l10n.chatInputHint,
                     hintStyle: TextStyle(
                         color: kDark.withOpacity(0.4), fontSize: 14),
                     filled: true,
@@ -1110,6 +1134,7 @@ class _SessionMoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: 32,
       height: 32,
@@ -1149,7 +1174,7 @@ class _SessionMoreButton extends StatelessWidget {
               Icon(pinned ? Icons.push_pin_outlined : Icons.push_pin,
                   size: 16, color: kDark),
               const SizedBox(width: 10),
-              Text(pinned ? '고정 해제' : '고정하기',
+              Text(pinned ? l10n.unpin : l10n.pin,
                   style: const TextStyle(
                       fontSize: 13,
                       color: kDark,
@@ -1157,30 +1182,30 @@ class _SessionMoreButton extends StatelessWidget {
             ],
           ),
         ),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'rename',
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 16, color: kDark),
-              SizedBox(width: 10),
-              Text('이름 바꾸기',
-                  style: TextStyle(
+              const Icon(Icons.edit_outlined, size: 16, color: kDark),
+              const SizedBox(width: 10),
+              Text(l10n.renameChat,
+                  style: const TextStyle(
                       fontSize: 13,
                       color: kDark,
                       fontWeight: FontWeight.w500)),
             ],
           ),
         ),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'delete',
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.delete_outline, size: 16, color: kErrorColor),
-              SizedBox(width: 10),
-              Text('삭제',
-                  style: TextStyle(
+              const Icon(Icons.delete_outline, size: 16, color: kErrorColor),
+              const SizedBox(width: 10),
+              Text(l10n.delete,
+                  style: const TextStyle(
                       fontSize: 13,
                       color: kErrorColor,
                       fontWeight: FontWeight.w500)),

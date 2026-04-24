@@ -31,13 +31,6 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
 
   final ApiService _api = ApiService();
 
-  static const _hours = [
-    ('자시', '23~01시', '23'), ('축시', '01~03시', '01'), ('인시', '03~05시', '03'),
-    ('묘시', '05~07시', '05'), ('진시', '07~09시', '07'), ('사시', '09~11시', '09'),
-    ('오시', '11~13시', '11'), ('미시', '13~15시', '13'), ('신시', '15~17시', '15'),
-    ('유시', '17~19시', '17'), ('술시', '19~21시', '19'), ('해시', '21~23시', '21'),
-  ];
-
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -141,9 +134,9 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                             child: Row(
                               children: [
                                 const SizedBox(width: 16),
-                                _wheel(years, yearCtrl, (v) => '$v${l10n.year}', (v) => year = v),
-                                _wheel(months, monthCtrl, (v) => '$v${l10n.month}', (v) => month = v),
-                                _wheel(days, dayCtrl, (v) => '$v${l10n.day}', (v) => day = v),
+                                _wheel(years, yearCtrl, (v) => l10n.locale.languageCode == 'en' ? '$v' : '$v${l10n.year}', (v) => year = v),
+                                _wheel(months, monthCtrl, (v) => l10n.locale.languageCode == 'en' ? '$v' : '$v${l10n.month}', (v) => month = v),
+                                _wheel(days, dayCtrl, (v) => l10n.locale.languageCode == 'en' ? '$v' : '$v${l10n.day}', (v) => day = v),
                                 const SizedBox(width: 16),
                               ],
                             ),
@@ -306,8 +299,8 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                 _label(l10n.birthHour),
                 const SizedBox(height: 8),
                 ...[
-                  _hours.sublist(0, 6),
-                  _hours.sublist(6, 12),
+                  l10n.birthHourList.sublist(0, 6),
+                  l10n.birthHourList.sublist(6, 12),
                 ].map((row) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
@@ -430,7 +423,7 @@ class _AddProfileScreenState extends State<AddProfileScreen> {
                 child: Text(
                   _birthDate == null
                       ? l10n.selectDate
-                      : '${_birthDate!.year}${l10n.year} ${_birthDate!.month}${l10n.month} ${_birthDate!.day}${l10n.day}',
+                      : l10n.formatBirthDate(_birthDate!.year, _birthDate!.month, _birthDate!.day),
                   style: TextStyle(
                     fontSize: 15, color: _birthDate == null ? kTextMuted : kDark),
                 ),

@@ -352,28 +352,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     return '$stemChar${branchChar}일주 · $color $animal';
   }
 
-  // birthHour 문자열 → 시진 표시 (e.g. "자시 (23:00~01:00)")
-  static String? _hourDisplay(String? birthHour, String? precision) {
+  // birthHour 문자열 → 시진 표시 (현재 locale에 맞게 번역)
+  // e.g. ko: "자시 (23:00~01:00)", en: "Rat (23:00–01:00)"
+  static String? _hourDisplay(AppLocalizations l10n, String? birthHour, String? precision) {
     if (precision == 'unknown' || birthHour == null) return null;
-    const hours = [
-      ('자시', '23:00~01:00', '23'),
-      ('축시', '01:00~03:00', '01'),
-      ('인시', '03:00~05:00', '03'),
-      ('묘시', '05:00~07:00', '05'),
-      ('진시', '07:00~09:00', '07'),
-      ('사시', '09:00~11:00', '09'),
-      ('오시', '11:00~13:00', '11'),
-      ('미시', '13:00~15:00', '13'),
-      ('신시', '15:00~17:00', '15'),
-      ('유시', '17:00~19:00', '17'),
-      ('술시', '19:00~21:00', '19'),
-      ('해시', '21:00~23:00', '21'),
-    ];
-    final padded = birthHour.padLeft(2, '0');
-    for (final h in hours) {
-      if (h.$3 == padded) return '${h.$2} (${h.$1})';
-    }
-    return null;
+    return l10n.birthHourDisplay(birthHour);
   }
 
   Widget _infoCard() {
@@ -399,7 +382,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final chartData = (p['chartData'] ?? p['chart_data']) as Map<String, dynamic>?;
     final pillarColor = _dayPillarColor(chartData);
     final dayPillarLabel = _dayPillarLabel(chartData);
-    final hourDisplay = _hourDisplay(birthHour, birthHourPrecision);
+    final hourDisplay = _hourDisplay(l10n, birthHour, birthHourPrecision);
     debugPrint('=== _infoCard: name=$name, birthDate=$birthDate, gender=$gender, calendarType=$calendarType');
 
     return ClipRRect(
@@ -523,9 +506,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
 
   String _formatDate(String date) {
     final l10n = AppLocalizations.of(context);
-    final parts = date.split('-');
-    if (parts.length != 3) return date;
-    return '${parts[0]}${l10n.year} ${parts[1]}${l10n.month} ${parts[2]}${l10n.day}';
+    return l10n.formatBirthDateIso(date);
   }
 
   // 십성(十星) 계산
@@ -1461,13 +1442,17 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
     final topPad = MediaQuery.of(context).padding.top + kToolbarHeight + 52;
     // Show section-based display if sections available
     if (sections != null && sections.isNotEmpty) {
-      // 종합 평가는 맨 마지막으로 정렬
+      // 종합 평가는 맨 마지막으로 정렬 (ko/en 양쪽 키워드 수용)
+      bool isOverall(String t) {
+        final lower = t.toLowerCase();
+        return t.contains('종합') || lower.contains('overall') || lower.contains('summary');
+      }
       final sorted = [...sections];
       sorted.sort((a, b) {
         final aTitle = ((a as Map<String, dynamic>)['title'] as String? ?? '');
         final bTitle = ((b as Map<String, dynamic>)['title'] as String? ?? '');
-        final aIsOverall = aTitle.contains('종합');
-        final bIsOverall = bTitle.contains('종합');
+        final aIsOverall = isOverall(aTitle);
+        final bIsOverall = isOverall(bTitle);
         if (aIsOverall == bIsOverall) return 0;
         return aIsOverall ? 1 : -1;
       });
@@ -1483,7 +1468,14 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen>
                   Builder(builder: (_) {
                     final sec = sorted[i] as Map<String, dynamic>;
                     final title = sec['title'] as String? ?? '';
-                    final isBlurred = !title.contains('성격');
+                    // 성격/기질 섹션(영문: personality/character)은 무료 노출, 나머지 블러 처리
+                    final lower = title.toLowerCase();
+                    final isPersonality = title.contains('성격') ||
+                        title.contains('기질') ||
+                        lower.contains('personality') ||
+                        lower.contains('character') ||
+                        lower.contains('temperament');
+                    final isBlurred = !isPersonality;
                     return _sectionCard(i, sec, blurred: isBlurred);
                   }),
               ],
@@ -1764,13 +1756,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   final ApiService _api = ApiService();
 
-  static const _hours = [
-    ('자시', '23~01시', '23'), ('축시', '01~03시', '01'), ('인시', '03~05시', '03'),
-    ('묘시', '05~07시', '05'), ('진시', '07~09시', '07'), ('사시', '09~11시', '09'),
-    ('오시', '11~13시', '11'), ('미시', '13~15시', '13'), ('신시', '15~17시', '15'),
-    ('유시', '17~19시', '17'), ('술시', '19~21시', '19'), ('해시', '21~23시', '21'),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1945,7 +1930,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       child: Text(
                         _birthDate == null
                             ? l10n.selectDate
-                            : '${_birthDate!.year}${l10n.year} ${_birthDate!.month}${l10n.month} ${_birthDate!.day}${l10n.day}',
+                            : l10n.formatBirthDate(_birthDate!.year, _birthDate!.month, _birthDate!.day),
                         style: TextStyle(
                           fontSize: 15,
                           color: _birthDate == null ? kTextMuted : kDark),
@@ -1984,9 +1969,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             ]),
             if (_birthHourPrecision == 'exact') ...[
               const SizedBox(height: 12),
-              // 1행: 자시~사시 (6개)
+              // 1행: 자시~사시 (6개) / Row 1: Rat–Snake
               Row(children: List.generate(6, (i) {
-                final h = _hours[i];
+                final h = l10n.birthHourList[i];
                 final selected = _birthHour == h.$3;
                 return Expanded(child: GestureDetector(
                   onTap: () => setState(() => _birthHour = h.$3),
@@ -2008,9 +1993,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ));
               })),
               const SizedBox(height: 6),
-              // 2행: 오시~해시 (6개)
+              // 2행: 오시~해시 (6개) / Row 2: Horse–Pig
               Row(children: List.generate(6, (i) {
-                final h = _hours[i + 6];
+                final h = l10n.birthHourList[i + 6];
                 final selected = _birthHour == h.$3;
                 return Expanded(child: GestureDetector(
                   onTap: () => setState(() => _birthHour = h.$3),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/primary_button.dart';
@@ -29,22 +30,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final ApiService _api = ApiService();
 
-  // 12 시진 (2시간 간격)
-  static const _hours = [
-    ('자시', '23:00~01:00', '23'),
-    ('축시', '01:00~03:00', '01'),
-    ('인시', '03:00~05:00', '03'),
-    ('묘시', '05:00~07:00', '05'),
-    ('진시', '07:00~09:00', '07'),
-    ('사시', '09:00~11:00', '09'),
-    ('오시', '11:00~13:00', '11'),
-    ('미시', '13:00~15:00', '13'),
-    ('신시', '15:00~17:00', '15'),
-    ('유시', '17:00~19:00', '17'),
-    ('술시', '19:00~21:00', '19'),
-    ('해시', '21:00~23:00', '21'),
-  ];
-
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -52,12 +37,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _pickDate() async {
+    final l10n = AppLocalizations.of(context);
     final date = await showDatePicker(
       context: context,
       initialDate: DateTime(1990),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      locale: const Locale('ko'),
+      locale: l10n.locale,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: kGold, onPrimary: kDark),
@@ -69,12 +55,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (_nameCtrl.text.trim().isEmpty) {
-      setState(() => _error = '이름을 입력해주세요.');
+      setState(() => _error = l10n.nameRequired);
       return;
     }
     if (_birthDate == null) {
-      setState(() => _error = '생년월일을 선택해주세요.');
+      setState(() => _error = l10n.birthDateRequired);
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -92,7 +79,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await _api.updateOnboardingStep('complete');
       if (mounted) context.go('/profiles');
     } catch (e) {
-      setState(() => _error = '프로필 생성에 실패했습니다.');
+      if (mounted) {
+        final l10nCtx = AppLocalizations.of(context);
+        setState(() => _error = l10nCtx.createProfileFailed);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -112,6 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildWelcome() {
+    final l10n = AppLocalizations.of(context);
     final name = context.read<AuthProvider>().displayName;
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -119,7 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           const Spacer(),
           Text(
-            '사주',
+            l10n.appTitle,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
               color: kGold,
               fontWeight: FontWeight.w300,
@@ -128,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '안녕하세요, ${name.isNotEmpty ? name : ''}님',
+            l10n.helloUser(name.isNotEmpty ? name : ''),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -136,17 +127,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'AI가 당신의 사주를 분석해\n삶의 흐름을 알려드립니다.',
+          Text(
+            l10n.onboardingTagline,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 15, color: kTextMuted, height: 1.6),
+            style: const TextStyle(fontSize: 15, color: kTextMuted, height: 1.6),
           ),
           const SizedBox(height: 48),
           // Feature cards as GlassCards
           ...[
-            ('✦', '정확한 사주 계산', '만세력 기반 정밀 계산'),
-            ('✦', 'AI 해석', '클로드 AI가 상세히 분석'),
-            ('✦', '오행 분석', '목화토금수 균형 파악'),
+            ('✦', l10n.onboardingFeatureCalcTitle, l10n.onboardingFeatureCalcDesc),
+            ('✦', l10n.onboardingFeatureAiTitle, l10n.onboardingFeatureAiDesc),
+            ('✦', l10n.onboardingFeatureElementsTitle, l10n.onboardingFeatureElementsDesc),
           ].map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -181,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const Spacer(),
           PrimaryButton(
-            text: '시작하기',
+            text: l10n.getStarted,
             onPressed: () => setState(() => _step = 1),
           ),
           const SizedBox(height: 16),
@@ -191,6 +182,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildForm() {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
@@ -204,9 +196,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(width: 4),
-              const Text(
-                '기본 정보 입력',
-                style: TextStyle(
+              Text(
+                l10n.basicInfo,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: kDark,
@@ -215,18 +207,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            '사주 분석을 위해 정확한 정보를 입력해주세요',
-            style: TextStyle(fontSize: 13, color: kTextMuted),
+          Text(
+            l10n.basicInfoDesc,
+            style: const TextStyle(fontSize: 13, color: kTextMuted),
           ),
           const SizedBox(height: 24),
           // 이름
-          _sectionLabel('이름'),
+          _sectionLabel(l10n.name),
           const SizedBox(height: 6),
-          _textField(controller: _nameCtrl, hint: '홍길동'),
+          _textField(controller: _nameCtrl, hint: l10n.nameHint),
           const SizedBox(height: 20),
           // 생년월일
-          _sectionLabel('생년월일'),
+          _sectionLabel(l10n.birthDate),
           const SizedBox(height: 6),
           GestureDetector(
             onTap: _pickDate,
@@ -247,8 +239,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Expanded(
                         child: Text(
                           _birthDate == null
-                              ? '날짜를 선택하세요'
-                              : '${_birthDate!.year}년 ${_birthDate!.month}월 ${_birthDate!.day}일',
+                              ? l10n.selectDate
+                              : l10n.formatBirthDate(_birthDate!.year, _birthDate!.month, _birthDate!.day),
                           style: TextStyle(
                             fontSize: 15,
                             color: _birthDate == null ? kTextMuted : kDark,
@@ -264,37 +256,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 20),
           // 성별
-          _sectionLabel('성별'),
+          _sectionLabel(l10n.gender),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _selectButton('남성', 'male', _gender, (v) => setState(() => _gender = v))),
+              Expanded(child: _selectButton(l10n.male, 'male', _gender, (v) => setState(() => _gender = v))),
               const SizedBox(width: 12),
-              Expanded(child: _selectButton('여성', 'female', _gender, (v) => setState(() => _gender = v))),
+              Expanded(child: _selectButton(l10n.female, 'female', _gender, (v) => setState(() => _gender = v))),
             ],
           ),
           const SizedBox(height: 20),
           // 달력 종류
-          _sectionLabel('달력 종류'),
+          _sectionLabel(l10n.calendarType),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _selectButton('양력', 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
+              Expanded(child: _selectButton(l10n.solar, 'solar', _calendarType, (v) => setState(() => _calendarType = v))),
               const SizedBox(width: 12),
-              Expanded(child: _selectButton('음력', 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
+              Expanded(child: _selectButton(l10n.lunar, 'lunar', _calendarType, (v) => setState(() => _calendarType = v))),
             ],
           ),
           const SizedBox(height: 20),
           // 태어난 시간
-          _sectionLabel('태어난 시간'),
+          _sectionLabel(l10n.birthHour),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _selectButton('정확히 앎', 'exact', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _selectButton(l10n.knowExactly, 'exact', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
               const SizedBox(width: 8),
-              Expanded(child: _selectButton('대략 앎', 'rough', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _selectButton(l10n.knowRoughly, 'rough', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
               const SizedBox(width: 8),
-              Expanded(child: _selectButton('모름', 'unknown', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
+              Expanded(child: _selectButton(l10n.unknown, 'unknown', _birthHourPrecision, (v) => setState(() => _birthHourPrecision = v))),
             ],
           ),
           if (_birthHourPrecision == 'exact') ...[
@@ -302,7 +294,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _hours.map((h) {
+              children: l10n.birthHourList.map((h) {
                 final selected = _birthHour == h.$3;
                 return GestureDetector(
                   onTap: () => setState(() => _birthHour = h.$3),
@@ -353,7 +345,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ],
           const SizedBox(height: 28),
-          PrimaryButton(text: '분석 시작', onPressed: _submit, loading: _loading),
+          PrimaryButton(text: l10n.startAnalysisAction, onPressed: _submit, loading: _loading),
           const SizedBox(height: 24),
         ],
       ),

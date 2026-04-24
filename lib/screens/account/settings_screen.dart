@@ -278,8 +278,11 @@ class _PolicySheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isPrivacy = type == _PolicyType.privacy;
+    final isEn = l10n.locale.languageCode == 'en';
     final title = isPrivacy ? l10n.privacyPolicy : l10n.termsOfService;
-    final content = isPrivacy ? _privacyContent : _termsContent;
+    final content = isPrivacy
+        ? (isEn ? _privacyContentEn : _privacyContentKo)
+        : (isEn ? _termsContentEn : _termsContentKo);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -335,7 +338,7 @@ class _PolicySheet extends StatelessWidget {
     );
   }
 
-  static const _privacyContent = '''
+  static const _privacyContentKo = '''
 최종 수정일: 2025년 1월 1일
 
 사주 앱(이하 "회사")은 이용자의 개인정보를 중요하게 생각하며, 「개인정보 보호법」 및 관련 법령을 준수합니다.
@@ -370,7 +373,42 @@ class _PolicySheet extends StatelessWidget {
 ■ 고지 의무
 본 방침이 변경되는 경우 앱 내 공지를 통해 사전 안내드립니다.''';
 
-  static const _termsContent = '''
+  static const _privacyContentEn = '''
+Last updated: January 1, 2025
+
+The Saju app (the "Company") values your privacy and complies with the Personal Information Protection Act and related regulations.
+
+■ Information We Collect
+- Required: email address, password (stored encrypted)
+- Optional: name, date of birth, time of birth, gender
+
+■ Purpose of Collection and Use
+- Providing services and managing membership
+- Delivering Saju analysis and AI readings
+- Improving the service and statistical analysis
+
+■ Retention Period
+- Retained until the account is deleted
+- Retained for the period required by applicable law, where longer retention is mandated
+
+■ Disclosure to Third Parties
+The Company does not provide personal information to third parties without your consent, except when required by law or when requested by investigative authorities under legal procedures.
+
+■ Processing Entrustment
+For service delivery, personal information is entrusted as follows:
+- Supabase Inc.: database and authentication services
+- Anthropic Inc.: AI analysis services (no personally identifying information is shared)
+
+■ Your Rights
+You may at any time request access to, correction of, deletion of, or suspension of processing of your personal information.
+
+■ Privacy Officer
+Email: privacy@saju-app.com
+
+■ Notice of Changes
+Any changes to this policy will be announced in-app in advance.''';
+
+  static const _termsContentKo = '''
 최종 수정일: 2025년 1월 1일
 
 사주 앱 서비스 이용약관에 오신 것을 환영합니다.
@@ -408,6 +446,45 @@ class _PolicySheet extends StatelessWidget {
 
 ■ 문의
 이메일: support@saju-app.com''';
+
+  static const _termsContentEn = '''
+Last updated: January 1, 2025
+
+Welcome to the Saju app Terms of Service.
+
+■ Article 1 (Purpose)
+These Terms govern the conditions and procedures for using the Saju app (the "Service"), and the rights, obligations, and responsibilities of the Company and users.
+
+■ Article 2 (Service Description)
+- AI-based Saju reading service
+- Life-event logging and fortune analysis
+- Compatibility analysis
+- Other additional services provided by the Company
+
+■ Article 3 (Registration and Use)
+- Users may use the Service by agreeing to these Terms and completing registration.
+- Users under 14 years of age are not permitted to use the Service.
+- Registering using another person's information is prohibited.
+
+■ Article 4 (Restrictions on Use)
+Use of the Service may be restricted in the following cases:
+- Defaming others or causing harm to them
+- Interfering with the operation of the Service
+- Any other act that violates applicable law
+
+■ Article 5 (Paid Services)
+- Payments follow the in-app guidance.
+- Refunds are handled in accordance with applicable law and the Company's refund policy.
+
+■ Article 6 (Disclaimer)
+- Saju readings provided by the Service are for reference only and should not be the sole basis for important decisions.
+- The Company is not liable for service interruptions caused by force majeure, system failure, or other causes beyond its control.
+
+■ Article 7 (Changes to Terms)
+The Company may change these Terms when necessary, and will announce any changes in-app in advance.
+
+■ Contact
+Email: support@saju-app.com''';
 }
 
 class _HelpSection {
@@ -732,11 +809,11 @@ extension on _NotifChannel {
         _NotifChannel.both => 'both',
       };
 
-  String get label => switch (this) {
-        _NotifChannel.off => '끄기',
-        _NotifChannel.push => '푸시',
-        _NotifChannel.email => '이메일',
-        _NotifChannel.both => '모두',
+  String labelOf(AppLocalizations l10n) => switch (this) {
+        _NotifChannel.off => l10n.notifChannelOff,
+        _NotifChannel.push => l10n.notifChannelPush,
+        _NotifChannel.email => l10n.notifChannelEmail,
+        _NotifChannel.both => l10n.notifChannelBoth,
       };
 
   IconData get icon => switch (this) {
@@ -791,6 +868,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -814,9 +892,9 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '알림 설정',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark),
+            Text(
+              l10n.notificationSettings,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark),
             ),
             const SizedBox(height: 16),
             if (_loading)
@@ -827,18 +905,18 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
             else ...[
               _ReminderCard(
                 icon: Icons.edit_note,
-                time: '오후 8:00',
-                title: '오늘 하루 어땠나요?',
-                subtitle: '저녁 8시에 오늘의 이벤트를 작성하도록 알려드려요.',
+                time: l10n.notifReminderEventTime,
+                title: l10n.notifReminderEventTitle,
+                subtitle: l10n.notifReminderEventSubtitle,
                 current: _event,
                 onChanged: _setEvent,
               ),
               const SizedBox(height: 12),
               _ReminderCard(
                 icon: Icons.wb_sunny_outlined,
-                time: '오전 9:30',
-                title: '오늘의 운세',
-                subtitle: '아침 9시 30분에 오늘의 운세를 알려드려요.',
+                time: l10n.notifReminderFortuneTime,
+                title: l10n.notifReminderFortuneTitle,
+                subtitle: l10n.notifReminderFortuneSubtitle,
                 current: _fortune,
                 onChanged: _setFortune,
               ),
@@ -970,6 +1048,7 @@ class _ChannelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isOff = channel == _NotifChannel.off;
     final activeColor = isOff ? kErrorColor : kGold;
     return GestureDetector(
@@ -994,7 +1073,7 @@ class _ChannelChip extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              channel.label,
+              channel.labelOf(l10n),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

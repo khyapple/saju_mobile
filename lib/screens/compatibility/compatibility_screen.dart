@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/profiles_provider.dart';
 import '../../models/profile.dart';
 import '../../services/api_service.dart';
@@ -15,7 +16,6 @@ import '../../widgets/glass_card.dart';
 class _AnalysisRecord {
   final String profileAName;
   final String profileBName;
-  final String compatLabel;
   final int compatIndex;
   final String result;
   final DateTime createdAt;
@@ -23,31 +23,44 @@ class _AnalysisRecord {
   _AnalysisRecord({
     required this.profileAName,
     required this.profileBName,
-    required this.compatLabel,
     required this.compatIndex,
     required this.result,
     required this.createdAt,
   });
 
-  String get title => '${profileAName} & ${profileBName}';
-  String get subtitle => '$compatLabel 궁합';
+  String get title => '$profileAName & $profileBName';
+  String subtitleOf(AppLocalizations l10n) =>
+      l10n.compatSubtitleOf(_compatLabel(l10n, compatIndex));
 }
 
-// 궁합 유형 정의
-class _CompatType {
-  final String label;
-  final String prompt;
-  final IconData icon;
-  const _CompatType({required this.label, required this.prompt, required this.icon});
-}
-
-const _compatTypes = [
-  _CompatType(label: '연애', prompt: '두 사람의 연애궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.favorite_outline),
-  _CompatType(label: '결혼', prompt: '두 사람의 결혼궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.diamond_outlined),
-  _CompatType(label: '가족', prompt: '두 사람의 가족궁합(부모-자식 또는 형제자매 관계)을 사주를 기반으로 상세히 분석해주세요. 특히 소통 방식, 갈등 요인, 서로 맞춰가는 법에 집중해주세요.', icon: Icons.family_restroom),
-  _CompatType(label: '사업', prompt: '두 사람의 사업궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.handshake_outlined),
-  _CompatType(label: '우정', prompt: '두 사람의 우정궁합을 사주를 기반으로 상세히 분석해주세요.', icon: Icons.people_outline),
+// 궁합 유형 정의: 아이콘은 고정, 라벨/프롬프트는 l10n에서 조회
+const _compatIcons = <IconData>[
+  Icons.favorite_outline,
+  Icons.diamond_outlined,
+  Icons.family_restroom,
+  Icons.handshake_outlined,
+  Icons.people_outline,
 ];
+
+String _compatLabel(AppLocalizations l10n, int i) {
+  switch (i) {
+    case 0: return l10n.typeLove;
+    case 1: return l10n.typeMarriage;
+    case 2: return l10n.typeFamily;
+    case 3: return l10n.typeBusiness;
+    default: return l10n.typeFriendship;
+  }
+}
+
+String _compatPrompt(AppLocalizations l10n, int i) {
+  switch (i) {
+    case 0: return l10n.compatPromptLove;
+    case 1: return l10n.compatPromptMarriage;
+    case 2: return l10n.compatPromptFamily;
+    case 3: return l10n.compatPromptBusiness;
+    default: return l10n.compatPromptFriendship;
+  }
+}
 
 class CompatibilityScreen extends StatefulWidget {
   const CompatibilityScreen({super.key});
@@ -86,7 +99,7 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
     super.dispose();
   }
 
-  String _buildChartContext(Map<String, dynamic> profile) {
+  String _buildChartContext(Map<String, dynamic> profile, {required bool isEn}) {
     final chart = (profile['chartData'] ?? profile['chart_data']) as Map<String, dynamic>?;
     final name = profile['name'] as String? ?? '';
     final by = (profile['birthYear'] as num?)?.toInt();
@@ -95,16 +108,30 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
     final bh = (profile['birthHour'] as num?)?.toInt();
     final gender = profile['gender'] as String? ?? '';
 
+    // Locale-specific labels
+    final dobLbl = isEn ? 'Date of birth' : '생년월일';
+    final genderLbl = isEn ? 'Gender' : '성별';
+    final male = isEn ? 'male' : '남성';
+    final female = isEn ? 'female' : '여성';
+    final chartLbl = isEn ? '$name Saju data' : '$name 사주 데이터';
+    final pillarsHdr = isEn ? 'Four Pillars' : '명식';
+    final yearLbl = isEn ? 'Year Pillar' : '연주';
+    final monthLbl = isEn ? 'Month Pillar' : '월주';
+    final dayLbl = isEn ? 'Day Pillar' : '일주';
+    final hourLbl = isEn ? 'Hour Pillar' : '시주';
+    final hourSuffix = isEn && bh != null ? ' ${bh.toString().padLeft(2, '0')}:00' : (bh != null ? ' ${bh}시' : '');
+    final fiveHdr = isEn ? 'Five Elements' : '오행';
+
     if (chart == null) {
-      return '### $name\n- 생년월일: $by/$bm/$bd\n- 성별: $gender\n';
+      return '### $name\n- $dobLbl: $by/$bm/$bd\n- $genderLbl: $gender\n';
     }
 
     final lines = <String>[
-      '### $name 사주 데이터',
-      '- 생년월일: $by/$bm/$bd${bh != null ? " ${bh}시" : ""}',
-      '- 성별: ${gender == "male" ? "남성" : "여성"}',
+      '### $chartLbl',
+      '- $dobLbl: $by/$bm/$bd$hourSuffix',
+      '- $genderLbl: ${gender == "male" ? male : female}',
       '',
-      '#### 명식',
+      '#### $pillarsHdr',
     ];
 
     String pillarText(Map<String, dynamic>? p) {
@@ -117,27 +144,36 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
     final dayP = chart['dayPillar'] as Map<String, dynamic>?;
     final hourP = chart['hourPillar'] as Map<String, dynamic>?;
 
-    if (yearP != null) lines.add('- 연주: ${pillarText(yearP)}');
-    if (monthP != null) lines.add('- 월주: ${pillarText(monthP)}');
-    if (dayP != null) lines.add('- 일주: ${pillarText(dayP)}');
-    if (hourP != null) lines.add('- 시주: ${pillarText(hourP)}');
+    if (yearP != null) lines.add('- $yearLbl: ${pillarText(yearP)}');
+    if (monthP != null) lines.add('- $monthLbl: ${pillarText(monthP)}');
+    if (dayP != null) lines.add('- $dayLbl: ${pillarText(dayP)}');
+    if (hourP != null) lines.add('- $hourLbl: ${pillarText(hourP)}');
 
     final five = chart['fiveElements'] as Map<String, dynamic>?;
     if (five != null) {
-      lines.addAll([
-        '',
-        '#### 오행',
-        '- 목:${five["목"]}, 화:${five["화"]}, 토:${five["토"]}, 금:${five["금"]}, 수:${five["수"]}',
-      ]);
+      if (isEn) {
+        lines.addAll([
+          '',
+          '#### $fiveHdr',
+          '- Wood:${five["목"]}, Fire:${five["화"]}, Earth:${five["토"]}, Metal:${five["금"]}, Water:${five["수"]}',
+        ]);
+      } else {
+        lines.addAll([
+          '',
+          '#### $fiveHdr',
+          '- 목:${five["목"]}, 화:${five["화"]}, 토:${five["토"]}, 금:${five["금"]}, 수:${five["수"]}',
+        ]);
+      }
     }
 
     return lines.join('\n');
   }
 
   Future<void> _startAnalysis() async {
+    final l10n = AppLocalizations.of(context);
     if (_profileA == null || _profileB == null) return;
     if (_profileA!.id == _profileB!.id) {
-      setState(() => _error = '서로 다른 프로필을 선택해주세요.');
+      setState(() => _error = l10n.selectDifferentProfiles);
       return;
     }
     setState(() {
@@ -165,9 +201,11 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
         }
       } catch (_) {}
 
+      final isEn = l10n.locale.languageCode == 'en';
+      final sajuHdr = isEn ? 'Saju' : '사주';
       final chartContext =
-          '## ${_profileA!.name} 사주\n${_buildChartContext(profileAFull)}\n\n'
-          '## ${_profileB!.name} 사주\n${_buildChartContext(profileBFull)}';
+          '## ${_profileA!.name} $sajuHdr\n${_buildChartContext(profileAFull, isEn: isEn)}\n\n'
+          '## ${_profileB!.name} $sajuHdr\n${_buildChartContext(profileBFull, isEn: isEn)}';
 
       // 채팅 세션 생성
       final session = await _api.createChatSession(
@@ -177,12 +215,10 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
       final sessionId =
           session['session']?['id'] as String? ?? session['id'] as String? ?? '';
 
-      final compatType = _compatTypes[_selectedTypeIndex];
-
-      // 메시지 전송 (스트리밍 응답 수집)
+      // 메시지 전송 (스트리밍 응답 수집) - locale 기반 프롬프트
       final response = await _api.sendMessage(
         sessionId,
-        compatType.prompt,
+        _compatPrompt(l10n, _selectedTypeIndex),
         chartContext: chartContext,
         interpretation: '',
         history: [],
@@ -194,7 +230,6 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
           _history.insert(0, _AnalysisRecord(
             profileAName: _profileA!.name,
             profileBName: _profileB!.name,
-            compatLabel: compatType.label,
             compatIndex: _selectedTypeIndex,
             result: response,
             createdAt: DateTime.now(),
@@ -209,7 +244,10 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
         );
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '궁합 분석을 시작할 수 없습니다.\n$e');
+      if (mounted) {
+        final l10nCtx = AppLocalizations.of(context);
+        setState(() => _error = '${l10nCtx.compatStartFailedPrefix}\n$e');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -242,8 +280,10 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final profilesProvider = context.watch<ProfilesProvider>();
-    final compatType = _compatTypes[_selectedTypeIndex];
+    final typeLabel = _compatLabel(l10n, _selectedTypeIndex);
+    final typeIcon = _compatIcons[_selectedTypeIndex];
 
     return Scaffold(
       key: _scaffoldKey,
@@ -276,9 +316,9 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
           icon: const Icon(Icons.arrow_back, color: kDark),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          '궁합 분석',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark),
+        title: Text(
+          l10n.compatibilityTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kDark),
         ),
         actions: [
           IconButton(
@@ -318,7 +358,7 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                           children: [
                             Expanded(child: _ProfileBox(
                               profile: _profileA,
-                              label: '첫 번째',
+                              label: l10n.first,
                               onTap: () => _openProfileModal(true),
                             )),
                             const Padding(
@@ -330,7 +370,7 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                             ),
                             Expanded(child: _ProfileBox(
                               profile: _profileB,
-                              label: '두 번째',
+                              label: l10n.second,
                               onTap: () => _openProfileModal(false),
                             )),
                           ],
@@ -339,17 +379,17 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                         const SizedBox(height: 28),
 
                         // ── 궁합 유형 선택 ────────────────────────────
-                        const Text('궁합 유형',
-                          style: TextStyle(
+                        Text(l10n.compatibilityType,
+                          style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w600,
                             color: kTextMuted, letterSpacing: 0.3)),
                         const SizedBox(height: 12),
                         Row(
-                          children: List.generate(_compatTypes.length, (i) {
+                          children: List.generate(_compatIcons.length, (i) {
                             final selected = i == _selectedTypeIndex;
                             return Expanded(
                               child: Padding(
-                                padding: EdgeInsets.only(right: i < _compatTypes.length - 1 ? 8 : 0),
+                                padding: EdgeInsets.only(right: i < _compatIcons.length - 1 ? 8 : 0),
                                 child: GestureDetector(
                                   onTap: () => setState(() {
                                     _selectedTypeIndex = i;
@@ -371,11 +411,11 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                                     ),
                                     child: Column(
                                       children: [
-                                        Icon(_compatTypes[i].icon,
+                                        Icon(_compatIcons[i],
                                           size: 20,
                                           color: selected ? kGold : kTextMuted),
                                         const SizedBox(height: 4),
-                                        Text(_compatTypes[i].label,
+                                        Text(_compatLabel(l10n, i),
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
@@ -418,9 +458,9 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                                 ? const SizedBox(
                                     width: 18, height: 18,
                                     child: CircularProgressIndicator(color: kInk, strokeWidth: 2))
-                                : Icon(compatType.icon, size: 18),
+                                : Icon(typeIcon, size: 18),
                             label: Text(
-                              _loading ? '분석 중...' : '${compatType.label}궁합 분석 시작',
+                              _loading ? l10n.analyzing : l10n.startCompatAnalysis(typeLabel),
                               style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w700)),
                             style: ElevatedButton.styleFrom(
@@ -454,8 +494,7 @@ class _CompatibilityScreenState extends State<CompatibilityScreen> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        '${_profileA!.name}님과 ${_profileB!.name}님의 '
-                                        '${compatType.label} 궁합 분석',
+                                        l10n.compatibilityWith(_profileA!.name, _profileB!.name, typeLabel),
                                         style: const TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
@@ -507,6 +546,7 @@ class _BlurredResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -573,9 +613,9 @@ class _BlurredResult extends StatelessWidget {
                     // TODO: 토큰 구매 페이지로 이동
                   },
                   icon: const Icon(Icons.add_circle_outline, size: 18),
-                  label: const Text(
-                    '토큰 추가하고 분석 전체 보기',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  label: Text(
+                    l10n.addTokensToSee,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kGold,
@@ -676,6 +716,7 @@ class _EmptySlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -693,8 +734,8 @@ class _EmptySlot extends StatelessWidget {
           style: const TextStyle(
             fontSize: 12, color: kTextMuted, fontWeight: FontWeight.w500)),
         const SizedBox(height: 2),
-        const Text('프로필 선택',
-          style: TextStyle(fontSize: 11, color: kTextMuted)),
+        Text(l10n.selectProfile,
+          style: const TextStyle(fontSize: 11, color: kTextMuted)),
       ],
     );
   }
@@ -706,6 +747,7 @@ class _SelectedProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = _dayPillarColor(profile);
     final emoji = _zodiacEmoji(profile);
     return Column(
@@ -744,11 +786,11 @@ class _SelectedProfile extends StatelessWidget {
             fontSize: 13, fontWeight: FontWeight.w700, color: kDark),
           maxLines: 1, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 2),
-        Text(profile.displayBirthDate,
+        Text(profile.formattedBirthDate(l10n),
           style: const TextStyle(fontSize: 10, color: kTextMuted),
           maxLines: 1, overflow: TextOverflow.ellipsis),
         const SizedBox(height: 2),
-        Text('탭하여 변경',
+        Text(l10n.tapToChange,
           style: TextStyle(fontSize: 10, color: kTextMuted.withOpacity(0.6))),
       ],
     );
@@ -771,6 +813,7 @@ class _ProfilePickerModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final available = profiles.where((p) => p.id != excludeId).toList();
 
     return ClipRRect(
@@ -797,19 +840,19 @@ class _ProfilePickerModal extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('프로필 선택',
-                style: TextStyle(
+              Text(l10n.selectProfile,
+                style: const TextStyle(
                   fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
               const SizedBox(height: 16),
               if (available.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(32),
                   child: Column(
-                    children: const [
-                      Icon(Icons.person_off_outlined, color: kTextMuted, size: 36),
-                      SizedBox(height: 12),
-                      Text('선택 가능한 프로필이 없습니다.',
-                        style: TextStyle(color: kTextMuted, fontSize: 14)),
+                    children: [
+                      const Icon(Icons.person_off_outlined, color: kTextMuted, size: 36),
+                      const SizedBox(height: 12),
+                      Text(l10n.noProfiles,
+                        style: const TextStyle(color: kTextMuted, fontSize: 14)),
                     ],
                   ),
                 )
@@ -844,6 +887,7 @@ class _ProfilePickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -891,8 +935,8 @@ class _ProfilePickerTile extends StatelessWidget {
                             color: kGold.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text('나',
-                            style: TextStyle(
+                          child: Text(l10n.me,
+                            style: const TextStyle(
                               fontSize: 10, color: kGold,
                               fontWeight: FontWeight.w700)),
                         ),
@@ -916,7 +960,7 @@ class _ProfilePickerTile extends StatelessWidget {
                       ],
                     ],
                   ),
-                  Text(profile.displayBirthDate,
+                  Text(profile.formattedBirthDate(l10n),
                     style: const TextStyle(fontSize: 12, color: kTextMuted)),
                 ],
               ),
@@ -939,17 +983,18 @@ class _HistoryDrawer extends StatelessWidget {
 
   const _HistoryDrawer({required this.history, required this.onSelect});
 
-  String _timeLabel(DateTime dt) {
+  String _timeLabel(AppLocalizations l10n, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return '방금 전';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
-    if (diff.inHours < 24) return '${diff.inHours}시간 전';
-    return '${diff.inDays}일 전';
+    if (diff.inMinutes < 1) return l10n.justNow;
+    if (diff.inMinutes < 60) return l10n.minutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.hoursAgo(diff.inHours);
+    return l10n.daysAgo(diff.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ClipRRect(
       borderRadius: const BorderRadius.horizontal(left: Radius.circular(24)),
       child: BackdropFilter(
@@ -973,9 +1018,9 @@ class _HistoryDrawer extends StatelessWidget {
                     children: [
                       const Icon(Icons.history, color: kGold, size: 20),
                       const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text('분석 기록',
-                          style: TextStyle(
+                      Expanded(
+                        child: Text(l10n.analysisHistory,
+                          style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700, color: kDark)),
                       ),
                       IconButton(
@@ -988,18 +1033,18 @@ class _HistoryDrawer extends StatelessWidget {
                 const Divider(color: Color(0x33FFFFFF), height: 1),
                 const SizedBox(height: 8),
                 if (history.isEmpty)
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.favorite_border, color: kTextMuted, size: 36),
-                          SizedBox(height: 12),
-                          Text('분석 기록이 없어요',
-                            style: TextStyle(color: kTextMuted, fontSize: 14)),
-                          SizedBox(height: 4),
-                          Text('궁합을 분석하면 여기에 저장돼요',
-                            style: TextStyle(color: kTextMuted, fontSize: 12)),
+                          const Icon(Icons.favorite_border, color: kTextMuted, size: 36),
+                          const SizedBox(height: 12),
+                          Text(l10n.noAnalysisHistory,
+                            style: const TextStyle(color: kTextMuted, fontSize: 14)),
+                          const SizedBox(height: 4),
+                          Text(l10n.noAnalysisHistoryDesc,
+                            style: const TextStyle(color: kTextMuted, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -1049,14 +1094,14 @@ class _HistoryDrawer extends StatelessWidget {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 2),
-                                      Text(rec.subtitle,
+                                      Text(rec.subtitleOf(l10n),
                                         style: const TextStyle(
                                           fontSize: 11, color: kTextMuted)),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(_timeLabel(rec.createdAt),
+                                Text(_timeLabel(l10n, rec.createdAt),
                                   style: const TextStyle(
                                     fontSize: 10, color: kTextMuted)),
                               ],

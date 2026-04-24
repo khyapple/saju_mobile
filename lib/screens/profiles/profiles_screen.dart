@@ -723,7 +723,7 @@ class _ProfilesScreenState extends State<ProfilesScreen>
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    ownerProfile.displayBirthDate,
+                                    ownerProfile.formattedBirthDate(l10n),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: kDark.withOpacity(0.45),
@@ -1054,7 +1054,7 @@ class _ProfileCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            profile.displayBirthDate,
+            profile.formattedBirthDate(l10n),
             style: TextStyle(
               fontSize: 11,
               color: isOwner ? kGold : kDark.withOpacity(0.4),
@@ -1065,7 +1065,7 @@ class _ProfileCard extends StatelessWidget {
           ),
           if (profile.birthHour != null) ...[
             const SizedBox(height: 2),
-            Text('${profile.birthHour}시생',
+            Text(l10n.bornAtHour(profile.birthHour!),
                 style: TextStyle(fontSize: 11, color: kDark.withOpacity(0.35))),
           ] else if (profile.birthHourPrecision == 'unknown') ...[
             const SizedBox(height: 2),
