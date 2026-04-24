@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,7 +9,6 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/cosmic_background.dart';
-import '../../widgets/glass_card.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -140,23 +140,25 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: CosmicBackground(
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeIn,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // 로고
+                  // 로고 — 할당 공간은 그대로, 내부 요소 크기만 축소
                   Center(
                     child: Column(
                       children: [
+                        const SizedBox(height: 8),
                         Container(
-                          width: 80, height: 80,
+                          width: 96, height: 96,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: kGold.withOpacity(0.5), width: 1.5),
@@ -168,123 +170,128 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: kGold.withOpacity(0.15),
-                                blurRadius: 30,
-                                spreadRadius: 2,
+                                color: kGold.withOpacity(0.18),
+                                blurRadius: 50,
+                                spreadRadius: 6,
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Text('命', style: TextStyle(fontSize: 36, color: kGold, fontWeight: FontWeight.w300)),
+                          child: Center(
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 68, height: 68,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 26),
                         Text(
-                          '사  주',
+                          l10n.appTitle,
                           style: TextStyle(
-                            color: kGold, fontWeight: FontWeight.w300,
-                            letterSpacing: 10, fontSize: 34,
+                            fontFamily: 'ShillaCulture',
+                            fontSize: 40,
+                            color: kGold,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 8,
                             shadows: [
-                              Shadow(color: kGold.withOpacity(0.3), blurRadius: 20),
+                              Shadow(color: kGold.withOpacity(0.3), blurRadius: 22),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(width: 44, height: 0.5, color: kGold.withOpacity(0.4)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                              child: Text('◈', style: TextStyle(color: kGold.withOpacity(0.6), fontSize: 9)),
-                            ),
-                            Container(width: 44, height: 0.5, color: kGold.withOpacity(0.4)),
-                          ],
-                        ),
                         const SizedBox(height: 10),
-                        Text(l10n.aiSajuAnalysis,
-                          style: const TextStyle(fontSize: 12, color: kTextMuted, letterSpacing: 2)),
+                        Image.asset(
+                          'assets/images/divider_center_02.png',
+                          height: 8,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          l10n.aiSajuAnalysis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: kDark.withOpacity(0.5),
+                            letterSpacing: 2,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 64),
 
-                  // 로그인 폼 - 글래스 카드
-                  GlassCard(
-                    padding: const EdgeInsets.all(24),
-                    blur: 10,
-                    fillColor: const Color(0x0CFFFFFF),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.login,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: kDark)),
-                        const SizedBox(height: 20),
+                  // 로그인 폼 — 박스 없이 배치, 3요소 가로폭 일치
+                  Center(
+                    child: SizedBox(
+                      width: 260,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 이메일 — floating label
+                          TextField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            style: const TextStyle(fontSize: 15, color: kDark),
+                            decoration: _inputDeco(label: l10n.email),
+                          ),
+                          const SizedBox(height: 14),
 
-                        // 이메일
-                        _field(controller: _emailCtrl, label: l10n.email, hint: 'example@email.com',
-                          keyboardType: TextInputType.emailAddress),
-                        const SizedBox(height: 16),
+                          // 비밀번호 — floating label
+                          TextField(
+                            controller: _passwordCtrl,
+                            obscureText: _obscure,
+                            onSubmitted: (_) => _login(),
+                            style: const TextStyle(fontSize: 15, color: kDark),
+                            decoration: _inputDeco(
+                              label: l10n.password,
+                              suffix: IconButton(
+                                icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility,
+                                  color: kTextMuted, size: 20),
+                                onPressed: () => setState(() => _obscure = !_obscure),
+                              ),
+                            ),
+                          ),
 
-                        // 비밀번호
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.password,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: _passwordCtrl,
-                              obscureText: _obscure,
-                              onSubmitted: (_) => _login(),
-                              style: const TextStyle(fontSize: 15, color: kDark),
-                              decoration: _inputDeco(
-                                hint: '••••••••',
-                                suffix: IconButton(
-                                  icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility,
-                                    color: kTextMuted, size: 20),
-                                  onPressed: () => setState(() => _obscure = !_obscure),
-                                ),
+                          // 비밀번호 찾기
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _forgotPassword,
+                              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 4)),
+                              child: Text(l10n.forgotPassword,
+                                style: const TextStyle(fontSize: 12, color: kTextMuted)),
+                            ),
+                          ),
+
+                          if (_error != null) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: kErrorColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: kErrorColor.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: kErrorColor, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(_error!, style: const TextStyle(color: kErrorColor, fontSize: 13)),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                        ),
-
-                        // 비밀번호 찾기
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _forgotPassword,
-                            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 4)),
-                            child: Text(l10n.forgotPassword,
-                              style: const TextStyle(fontSize: 12, color: kTextMuted)),
-                          ),
-                        ),
-
-                        if (_error != null) ...[
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: kErrorColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: kErrorColor.withOpacity(0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.error_outline, color: kErrorColor, size: 16),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(_error!, style: const TextStyle(color: kErrorColor, fontSize: 13)),
-                                ),
-                              ],
-                            ),
+
+                          PrimaryButton(
+                            text: l10n.login,
+                            onPressed: _login,
+                            loading: _loading,
                           ),
                         ],
-                        const SizedBox(height: 20),
-
-                        PrimaryButton(text: l10n.login, onPressed: _login, loading: _loading),
-                      ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -302,25 +309,32 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 16),
 
-                  // 소셜 로그인 - 글래스 스타일
-                  _socialBtn(
-                    label: l10n.continueWithGoogle,
-                    icon: const Text('G', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
-                    onTap: () => _handleSocialLogin(OAuthProvider.google),
-                  ),
-                  const SizedBox(height: 10),
-                  _socialBtn(
-                    label: l10n.continueWithApple,
-                    icon: const Text('', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    onTap: () => _handleSocialLogin(OAuthProvider.apple),
-                  ),
-                  const SizedBox(height: 10),
-                  _socialBtn(
-                    label: l10n.continueWithFacebook,
-                    icon: const Text('f', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1877F2))),
-                    onTap: () => _handleSocialLogin(OAuthProvider.facebook),
+                  // 소셜 로그인 - 원형 아이콘 버튼 (실제 브랜드 로고, 흰색)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _socialCircle(
+                        icon: const FaIcon(FontAwesomeIcons.google, size: 18, color: Colors.white),
+                        tooltip: l10n.continueWithGoogle,
+                        onTap: () => _handleSocialLogin(OAuthProvider.google),
+                      ),
+                      const SizedBox(width: 16),
+                      _socialCircle(
+                        icon: const FaIcon(FontAwesomeIcons.apple, size: 22, color: Colors.white),
+                        tooltip: l10n.continueWithApple,
+                        onTap: () => _handleSocialLogin(OAuthProvider.apple),
+                      ),
+                      const SizedBox(width: 16),
+                      _socialCircle(
+                        icon: const FaIcon(FontAwesomeIcons.facebookF, size: 18, color: Colors.white),
+                        tooltip: l10n.continueWithFacebook,
+                        onTap: () => _handleSocialLogin(OAuthProvider.facebook),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
+
+                  const Spacer(),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -334,6 +348,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -343,28 +358,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    TextInputType? keyboardType,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kDark)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 15, color: kDark),
-          decoration: _inputDeco(hint: hint),
-        ),
-      ],
-    );
-  }
-
-  InputDecoration _inputDeco({required String hint, Widget? suffix}) => InputDecoration(
+  InputDecoration _inputDeco({String? label, String? hint, Widget? suffix}) => InputDecoration(
+    labelText: label,
+    labelStyle: TextStyle(color: kDark.withOpacity(0.55), fontSize: 14),
+    floatingLabelStyle: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w500),
     hintText: hint,
     hintStyle: TextStyle(color: kDark.withOpacity(0.3), fontSize: 14),
     filled: true,
@@ -379,31 +376,27 @@ class _LoginScreenState extends State<LoginScreen>
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
   );
 
-  Widget _socialBtn({
-    required String label,
+  Widget _socialCircle({
     required Widget icon,
+    required String tooltip,
     required VoidCallback onTap,
   }) {
-    return SizedBox(
-      width: double.infinity, height: 48,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: OutlinedButton(
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0x08FFFFFF),
-              side: BorderSide(color: kGlassBorder),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                icon,
-                const SizedBox(width: 10),
-                Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: kDark.withOpacity(0.8))),
-              ],
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipOval(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0x0AFFFFFF),
+                border: Border.all(color: kGlassBorder, width: 0.8),
+              ),
+              alignment: Alignment.center,
+              child: icon,
             ),
           ),
         ),

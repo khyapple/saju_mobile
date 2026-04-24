@@ -38,6 +38,7 @@ class AppLocalizations {
   String get logout => _t('logout');
   String get logoutConfirm => _t('logoutConfirm');
   String get signup => _t('signup');
+  String get next => _t('next');
   String get email => _t('email');
   String get password => _t('password');
   String get passwordHint => _t('passwordHint');
@@ -55,6 +56,7 @@ class AppLocalizations {
   String get continueWithApple => _t('continueWithApple');
   String get continueWithFacebook => _t('continueWithFacebook');
   String get noAccount => _t('noAccount');
+  String get hasAccount => _t('hasAccount');
   String get aiSajuAnalysis => _t('aiSajuAnalysis');
   String get startAiAnalysis => _t('startAiAnalysis');
   String get checkYourEmail => _t('checkYourEmail');
@@ -68,7 +70,18 @@ class AppLocalizations {
   String get passwordVeryStrong => _t('passwordVeryStrong');
   String get passwordMinLength => _t('passwordMinLength');
   String get passwordTooShort => _t('passwordTooShort');
+  String get passwordRequired => _t('passwordRequired');
+  String get passwordConfirmRequired => _t('passwordConfirmRequired');
+  String get checkDuplicate => _t('checkDuplicate');
+  String get checkingEmail => _t('checkingEmail');
+  String get emailAvailable => _t('emailAvailable');
+  String get checkEmailFirst => _t('checkEmailFirst');
+  String get emailCheckUnavailable => _t('emailCheckUnavailable');
   String get agreeToTerms => _t('agreeToTerms');
+  /// RichText template for agree-to-terms with {terms} and {privacy} placeholders.
+  /// ko: "{terms} 및 {privacy}에 동의합니다"
+  /// en: "I agree to the {terms} and {privacy}"
+  String get agreeToTermsTemplate => _t('agreeToTermsTemplate');
   String get termsRequired => _t('termsRequired');
   String get emailAlreadyUsed => _t('emailAlreadyUsed');
   String get emailRateLimit => _t('emailRateLimit');
@@ -470,6 +483,7 @@ const _strings = <String, Map<String, String>>{
     'logout': '로그아웃',
     'logoutConfirm': '정말 로그아웃하시겠습니까?',
     'signup': '회원가입',
+    'next': '다음',
     'email': '이메일',
     'password': '비밀번호',
     'passwordHint': '최소 8자 이상',
@@ -487,6 +501,7 @@ const _strings = <String, Map<String, String>>{
     'continueWithApple': 'Apple로 계속하기',
     'continueWithFacebook': 'Facebook으로 계속하기',
     'noAccount': '계정이 없으신가요?',
+    'hasAccount': '계정이 있으신가요?',
     'aiSajuAnalysis': 'AI 사주 분석',
     'startAiAnalysis': 'AI 사주 분석을 시작해보세요',
     'checkYourEmail': '이메일을 확인해주세요',
@@ -500,7 +515,15 @@ const _strings = <String, Map<String, String>>{
     'passwordVeryStrong': '매우 강함',
     'passwordMinLength': '최소 8자 이상',
     'passwordTooShort': '비밀번호는 8자 이상이어야 합니다.',
+    'passwordRequired': '비밀번호를 입력해주세요.',
+    'passwordConfirmRequired': '비밀번호 확인을 입력해주세요.',
+    'checkDuplicate': '중복확인',
+    'checkingEmail': '확인 중...',
+    'emailAvailable': '사용 가능한 이메일입니다',
+    'checkEmailFirst': '이메일 중복확인을 해주세요.',
+    'emailCheckUnavailable': '이메일 확인 기능을 사용할 수 없습니다. 가입 시 확인됩니다.',
     'agreeToTerms': '서비스 이용약관 및 개인정보 처리방침에 동의합니다',
+    'agreeToTermsTemplate': '{terms} 및 {privacy}에 동의합니다',
     'termsRequired': '서비스 이용약관에 동의해주세요.',
     'emailAlreadyUsed': '이미 가입된 이메일입니다.',
     'emailRateLimit': '이메일 발송 한도를 초과했습니다. 잠시 후 다시 시도해주세요.',
@@ -576,7 +599,7 @@ const _strings = <String, Map<String, String>>{
     'onboardingFeatureElementsDesc': '목화토금수 균형 파악',
     'getStarted': '시작하기',
     'basicInfo': '기본 정보 입력',
-    'basicInfoDesc': '사주 분석을 위해 정확한 정보를 입력해주세요',
+    'basicInfoDesc': '사주분석을 위해 기본 정보를 입력해주세요.',
     'knowExactly': '정확히 앎',
     'knowRoughly': '대략 앎',
     'startAnalysisAction': '분석 시작',
@@ -761,6 +784,7 @@ const _strings = <String, Map<String, String>>{
     'logout': 'Log Out',
     'logoutConfirm': 'Are you sure you want to log out?',
     'signup': 'Sign Up',
+    'next': 'Next',
     'email': 'Email',
     'password': 'Password',
     'passwordHint': 'At least 8 characters',
@@ -778,6 +802,7 @@ const _strings = <String, Map<String, String>>{
     'continueWithApple': 'Continue with Apple',
     'continueWithFacebook': 'Continue with Facebook',
     'noAccount': "Don't have an account?",
+    'hasAccount': 'Already have an account?',
     'aiSajuAnalysis': 'AI Saju Analysis',
     'startAiAnalysis': 'Start your AI Saju analysis',
     'checkYourEmail': 'Check your email',
@@ -791,7 +816,15 @@ const _strings = <String, Map<String, String>>{
     'passwordVeryStrong': 'Very Strong',
     'passwordMinLength': 'At least 8 characters',
     'passwordTooShort': 'Password must be at least 8 characters.',
+    'passwordRequired': 'Please enter a password.',
+    'passwordConfirmRequired': 'Please confirm your password.',
+    'checkDuplicate': 'Check',
+    'checkingEmail': 'Checking...',
+    'emailAvailable': 'Email is available',
+    'checkEmailFirst': 'Please check email availability first.',
+    'emailCheckUnavailable': 'Email check is unavailable. Will be verified during signup.',
     'agreeToTerms': 'I agree to the Terms of Service and Privacy Policy',
+    'agreeToTermsTemplate': 'I agree to the {terms} and {privacy}',
     'termsRequired': 'Please agree to the Terms of Service.',
     'emailAlreadyUsed': 'This email is already registered.',
     'emailRateLimit': 'Email rate limit exceeded. Please try again later.',
@@ -867,7 +900,7 @@ const _strings = <String, Map<String, String>>{
     'onboardingFeatureElementsDesc': 'See how Wood/Fire/Earth/Metal/Water balance',
     'getStarted': 'Get started',
     'basicInfo': 'Basic information',
-    'basicInfoDesc': 'Please enter accurate info for your Saju analysis',
+    'basicInfoDesc': 'Please enter basic info for your Saju analysis.',
     'knowExactly': 'Know exactly',
     'knowRoughly': 'Approximate',
     'startAnalysisAction': 'Start analysis',

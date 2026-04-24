@@ -38,6 +38,25 @@ class ApiService {
 
   static const _timeout = Duration(seconds: 15);
 
+  // ─── 이메일 중복 확인 ─────────────────────────────────────
+  /// 서버에 이메일 사용 가능 여부를 물어본다.
+  /// 성공: `{available: bool}` 반환.
+  /// 엔드포인트가 없거나 오류면 예외. 호출측에서 fallback 판단.
+  Future<bool> checkEmailAvailable(String email) async {
+    final url = Uri.parse(
+      '$_base/api/auth/check-email?email=${Uri.encodeComponent(email)}',
+    );
+    final res = await http.get(
+      url,
+      headers: const {'Content-Type': 'application/json'},
+    ).timeout(_timeout);
+    if (res.statusCode != 200) {
+      throw Exception('check-email failed: ${res.statusCode}');
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return data['available'] as bool? ?? true;
+  }
+
   // ─── 프로필 목록 ───────────────────────────────────────────
   Future<List<Profile>> getProfiles() async {
     final headers = await _authHeaders();

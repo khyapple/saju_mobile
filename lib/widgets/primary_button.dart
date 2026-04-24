@@ -7,6 +7,7 @@ class PrimaryButton extends StatelessWidget {
   final bool loading;
   final bool outlined;
   final double? width;
+  final Color? textColor;
 
   const PrimaryButton({
     super.key,
@@ -15,6 +16,7 @@ class PrimaryButton extends StatelessWidget {
     this.loading = false,
     this.outlined = false,
     this.width,
+    this.textColor,
   });
 
   @override
@@ -67,7 +69,7 @@ class PrimaryButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            foregroundColor: kInk,
+            foregroundColor: textColor ?? kInk,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
@@ -86,16 +88,19 @@ class PrimaryButton extends StatelessWidget {
         height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(isOutlined ? kGold : kInk),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            isOutlined ? kGold : (textColor ?? kInk),
+          ),
         ),
       );
     }
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.3,
+        color: textColor,
       ),
     );
   }
