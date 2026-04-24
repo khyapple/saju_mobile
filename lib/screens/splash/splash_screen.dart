@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/cosmic_background.dart';
 
@@ -128,14 +128,14 @@ class _SplashScreenState extends State<SplashScreen>
                 child: AnimatedBuilder(
                   animation: _logoCtrl,
                   builder: (_, __) => Container(
-                    width: 200,
-                    height: 200,
+                    width: 220,
+                    height: 220,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          kGold.withOpacity(0.08 * _logoOpacity.value),
-                          kCosmicPurple.withOpacity(0.04 * _logoOpacity.value),
+                          kGold.withOpacity(0.10 * _logoOpacity.value),
+                          kCosmicPurple.withOpacity(0.05 * _logoOpacity.value),
                           Colors.transparent,
                         ],
                       ),
@@ -151,8 +151,8 @@ class _SplashScreenState extends State<SplashScreen>
                   builder: (_, __) => Transform.scale(
                     scale: _ringScale.value,
                     child: Container(
-                      width: 90,
-                      height: 90,
+                      width: 96,
+                      height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -165,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // 로고
+              // 로고 — 로그인 화면 사양과 일치
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -180,8 +180,8 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ),
                       child: Container(
-                        width: 90,
-                        height: 90,
+                        width: 96,
+                        height: 96,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -196,9 +196,9 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: kGold.withOpacity(0.15),
-                              blurRadius: 40,
-                              spreadRadius: 5,
+                              color: kGold.withOpacity(0.18),
+                              blurRadius: 50,
+                              spreadRadius: 6,
                             ),
                           ],
                         ),
@@ -206,17 +206,17 @@ class _SplashScreenState extends State<SplashScreen>
                           child: ClipOval(
                             child: Image.asset(
                               'assets/images/logo.png',
-                              width: 64,
-                              height: 64,
+                              width: 68,
+                              height: 68,
                               fit: BoxFit.contain,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 26),
 
-                    // 앱 이름
+                    // 앱 이름 — 로그인 화면과 동일 사양
                     AnimatedBuilder(
                       animation: _textCtrl,
                       builder: (_, child) => Transform.translate(
@@ -226,41 +226,44 @@ class _SplashScreenState extends State<SplashScreen>
                           child: child,
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '사 주',
-                            style: TextStyle(
-                              fontFamily: 'ShillaCulture',
-                              fontSize: 36,
-                              color: kGold,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 6,
-                              shadows: [
-                                Shadow(
-                                  color: kGold.withOpacity(0.3),
-                                  blurRadius: 20,
-                                ),
-                              ],
+                      child: Builder(builder: (ctx) {
+                        final l10n = AppLocalizations.of(ctx);
+                        return Column(
+                          children: [
+                            Text(
+                              l10n.appTitle,
+                              style: TextStyle(
+                                fontFamily: 'ShillaCulture',
+                                fontSize: 40,
+                                color: kGold,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 8,
+                                shadows: [
+                                  Shadow(
+                                    color: kGold.withOpacity(0.3),
+                                    blurRadius: 22,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Image.asset(
-                            'assets/images/divider_center_02.png',
-                            height: 14,
-                            fit: BoxFit.contain,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'AI 사주 분석',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: kDark.withOpacity(0.5),
-                              letterSpacing: 4,
+                            const SizedBox(height: 10),
+                            Image.asset(
+                              'assets/images/divider_center_02.png',
+                              height: 8,
+                              fit: BoxFit.contain,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 20),
+                            Text(
+                              l10n.aiSajuAnalysis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: kDark.withOpacity(0.5),
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
                     ),
                   ],
                 ),

@@ -27,6 +27,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.3
 
 flutter_launcher_icons:
   android: true
@@ -35,6 +36,18 @@ flutter_launcher_icons:
   adaptive_icon_background: "#0D0D0D"
   adaptive_icon_foreground: "assets/images/logo.png"
   remove_alpha_ios: true
+
+# 네이티브 런치 화면 — 어두운 배경만 보여주고 로고(한자)는 표시하지 않는다.
+# Flutter 쪽 SplashScreen이 바로 이어서 로고 애니메이션을 재생한다.
+# 적용하려면: `dart run flutter_native_splash:create`
+flutter_native_splash:
+  color: "#05051A"            # 코스믹 딥 배경
+  android_12:
+    color: "#05051A"
+    icon_background_color: "#05051A"
+  android: true
+  ios: true
+  web: false
 
 flutter:
   uses-material-design: true
